@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Updated viewport for mobile/WeChat: disable zooming, force full height, handle safe areas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>自然辩证法复习神器</title>
     <script>
       // Suppress the annoying Tailwind CDN warning
@@ -25,6 +26,9 @@
               secondary: '#10b981',
               accent: '#f59e0b',
               danger: '#ef4444',
+            },
+            screens: {
+              'standalone': { 'raw': '(display-mode: standalone)' },
             }
           }
         }
@@ -41,6 +45,17 @@
   }
 }
 </script>
+<style>
+  html, body {
+    height: 100%;
+    overflow: hidden; /* Prevent body scroll, handle inside App */
+    background-color: #f8fafc;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #root {
+    height: 100%;
+  }
+</style>
 </head>
   <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
