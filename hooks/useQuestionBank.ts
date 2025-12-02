@@ -3,8 +3,8 @@ import { Question, UserProgress, INITIAL_PROGRESS } from '../types';
 import { SEED_QUESTIONS } from '../data/seed';
 
 // Updated storage keys to force fresh data load
-const STORAGE_KEY_QUESTIONS = 'dm_questions_v2';
-const STORAGE_KEY_PROGRESS = 'dm_progress_v2';
+const STORAGE_KEY_QUESTIONS = 'dm_questions_v5';
+const STORAGE_KEY_PROGRESS = 'dm_progress_v5';
 
 export const useQuestionBank = () => {
   const [questions, setQuestions] = useState<Question[]>([]);

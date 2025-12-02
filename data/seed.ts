@@ -1,332 +1,417 @@
 import { Question, QuestionType } from '../types';
 
 export const SEED_QUESTIONS: Question[] = [
-  // --- 绪论 & 科学技术概论 ---
+  // --- 选择题 (1-18) ---
   {
-    id: 'intro_1',
+    id: 'choice_1',
     type: QuestionType.CHOICE,
     content: '自然辩证法最早理论体系来源于？',
     options: ['马克思《资本论》', '恩格斯《自然辩证法》', '黑格尔《小逻辑》', '达尔文《进化论》'],
     correctAnswer: '恩格斯《自然辩证法》',
     mnemonic: '恩自 (恩格斯-自然辩证法)',
-    tags: ['绪论', '重点']
-  },
-  {
-    id: 'intro_2',
-    type: QuestionType.CHOICE,
-    content: '自然辩证法的学科性质是？',
-    options: ['纯粹哲学学科', '纯粹自然科学', '马克思主义哲学的重要组成部分，连接哲学与科学的桥梁', '社会科学'],
-    correctAnswer: '马克思主义哲学的重要组成部分，连接哲学与科学的桥梁',
-    mnemonic: '马哲组成，哲科桥梁',
     tags: ['绪论']
   },
   {
-    id: 'intro_3',
+    id: 'choice_2',
     type: QuestionType.CHOICE,
-    content: '自然辩证法产生的部分学科基础包括？',
-    options: ['相对论与量子力学', '达尔文进化论与能量守恒定律', '控制论与信息论', '几何学与代数'],
-    correctAnswer: '达尔文进化论与能量守恒定律',
-    mnemonic: '达进能守 (19世纪三大发现)',
-    tags: ['绪论']
+    content: '数理方程中许多不同形态的物理运动规律可以用同一个方程来描述，这表明？',
+    options: ['物理规律的偶然性', '物质及其运动规律的一定同一性', '数学的巧合', '运动形式的单一性'],
+    correctAnswer: '物质及其运动规律的一定同一性',
+    mnemonic: '方程同，规律同 (同一性)',
+    tags: ['物理哲学']
   },
-
-  // --- 自然观 (系统、演化、人与自然) ---
   {
-    id: 'nature_1',
+    id: 'choice_3',
     type: QuestionType.CHOICE,
-    content: '系统非加和性的实质是？',
-    options: ['整体等于部分之和', '整体性质和功能不等于部分性质和功能的简单叠加', '部分决定整体', '整体是可以分割的'],
-    correctAnswer: '整体性质和功能不等于部分性质和功能的简单叠加',
-    mnemonic: '1+1≠2 (整体涌现性)',
-    tags: ['系统论', '重点']
+    content: '微分作为无穷小量，其哲学意义是？',
+    options: ['纯粹的数学技巧', '微分的零与非零的统一，代表质变的关节点', '绝对的零', '不可知的量'],
+    correctAnswer: '微分的零与非零的统一，代表质变的关节点',
+    mnemonic: '零与非零，关节点',
+    tags: ['数学哲学']
   },
   {
-    id: 'nature_2',
-    type: QuestionType.JUDGE,
-    content: '作为系统的物质整体，其根本属性是加和性。',
-    correctAnswer: false,
-    mnemonic: '根本属性是“非加和性” (整体大于部分之和)',
-    tags: ['系统论']
-  },
-  {
-    id: 'nature_3',
+    id: 'choice_4',
     type: QuestionType.CHOICE,
-    content: '研究系统演化的“时间箭头”揭示了什么？',
-    options: ['时间的循环性', '时间的可逆性', '自然演化过程的不可逆性', '时间的相对性'],
-    correctAnswer: '自然演化过程的不可逆性',
-    mnemonic: '光阴一去不复返 (不可逆)',
-    tags: ['系统演化']
+    content: '相对论的创立表明？',
+    options: ['时间空间与物质及其运动状态密不可分', '时间是绝对的', '空间是静止的', '物质与运动无关'],
+    correctAnswer: '时间空间与物质及其运动状态密不可分',
+    mnemonic: '相对论=时空物运不分家',
+    tags: ['物理哲学']
   },
   {
-    id: 'nature_4',
+    id: 'choice_5',
     type: QuestionType.CHOICE,
-    content: '按照自组织理论，一个系统进入有序状态的条件是？',
-    options: ['封闭系统、平衡态', '开放系统、远离平衡态、非线性相互作用、涨落', '孤立系统、线性作用', '恒温恒压'],
-    correctAnswer: '开放系统、远离平衡态、非线性相互作用、涨落',
-    mnemonic: '开远非涨 (开放/远离平衡/非线性/涨落)',
-    tags: ['自组织', '难点']
+    content: '量子力学的创立表明？',
+    options: ['经典因果律的胜利', '昭示了一种不同于牛顿力学性质的新的因果观和规律观', '微观世界无规律', '上帝掷骰子'],
+    correctAnswer: '昭示了一种不同于牛顿力学性质的新的因果观和规律观',
+    mnemonic: '量子=新因果 (非牛顿)',
+    tags: ['物理哲学']
   },
   {
-    id: 'nature_5',
-    type: QuestionType.JUDGE,
-    content: '机械自然观的根本缺陷是把运动的原因归结为外力的作用。',
-    correctAnswer: true,
-    mnemonic: '机械=外力推动 (上帝的第一推动力)',
-    tags: ['自然观历史']
-  },
-  {
-    id: 'nature_6',
-    type: QuestionType.JUDGE,
-    content: '演化的概念只包含进化，不包含退化。',
-    correctAnswer: false,
-    mnemonic: '演化 = 进化 + 退化 (二者并存)',
-    tags: ['系统演化']
-  },
-  {
-    id: 'nature_7',
-    type: QuestionType.CHOICE,
-    content: '人工自然和天然自然的关系是？',
-    options: ['完全对立', '毫无关联', '对立统一，人工自然源于天然自然', '人工自然优于天然自然'],
-    correctAnswer: '对立统一，人工自然源于天然自然',
-    mnemonic: '源于天然，高于天然，对立统一',
-    tags: ['人工自然']
-  },
-  {
-    id: 'nature_8',
-    type: QuestionType.JUDGE,
-    content: '人工自然既具有自然属性，又具有社会属性。',
-    correctAnswer: true,
-    mnemonic: '人工=自然材质+社会用途',
-    tags: ['人工自然']
-  },
-  {
-    id: 'nature_9',
-    type: QuestionType.CHOICE,
-    content: '“牧场悖论” (公地悲剧) 的实质是？',
-    options: ['环境污染', '技术落后', '个体利益与集体利益的矛盾', '人口过剩'],
-    correctAnswer: '个体利益与集体利益的矛盾',
-    mnemonic: '个人多养羊，集体草吃光',
-    tags: ['可持续发展']
-  },
-
-  // --- 科学观 (科学划界、发展模式、认识论) ---
-  {
-    id: 'sci_1',
+    id: 'choice_6',
     type: QuestionType.CHOICE,
     content: '科学划界的标准主要包括？',
     options: ['主观性、模糊性', '可观察性、可控制性、可检验性、可重复性', '权威性、历史性', '不可证伪性'],
     correctAnswer: '可观察性、可控制性、可检验性、可重复性',
     mnemonic: '观控检重 (四性)',
-    tags: ['科学划界', '重点']
+    tags: ['科学观']
   },
   {
-    id: 'sci_2',
-    type: QuestionType.JUDGE,
-    content: '伪科学的共同点是把假说当真理，把非科学伪装成科学。',
-    correctAnswer: true,
-    mnemonic: '伪科学 = 披着科学外衣的迷信',
-    tags: ['科学划界']
-  },
-  {
-    id: 'sci_3',
+    id: 'choice_7',
     type: QuestionType.CHOICE,
-    content: '波普尔提出的科学发展模式是？',
-    options: ['范式-危机-革命', 'P1-TT-EE-P2 (猜想与反驳)', '硬核-保护带', '归纳-演绎'],
-    correctAnswer: 'P1-TT-EE-P2 (猜想与反驳)',
-    mnemonic: '波普尔 = 猜想反驳 (P-TT-EE-P)',
-    tags: ['科学发展模式']
-  },
-  {
-    id: 'sci_4',
-    type: QuestionType.CHOICE,
-    content: '库恩提出的科学发展模式的核心概念是？',
-    options: ['证伪', '范式 (Paradigm)', '科学纲领', '无政府主义'],
-    correctAnswer: '范式 (Paradigm)',
-    mnemonic: '库恩范式 (常规科学-危机-革命)',
-    tags: ['科学发展模式']
-  },
-  {
-    id: 'sci_5',
-    type: QuestionType.CHOICE,
-    content: '拉卡托斯的科学研究纲领包括哪两个部分？',
-    options: ['内核与外壳', '硬核与保护带', '理论与实践', '公理与定理'],
-    correctAnswer: '硬核与保护带',
-    mnemonic: '拉卡托斯 = 硬核不可动 + 保护带可变',
-    tags: ['科学发展模式']
-  },
-  {
-    id: 'sci_6',
-    type: QuestionType.JUDGE,
-    content: '“科学渗透理论”是指纯客观的观察是不存在的，观察中总渗透着理论。',
-    correctAnswer: true,
-    mnemonic: '观察依赖理论 (戴着有色眼镜看世界)',
-    tags: ['科学认识论']
-  },
-  {
-    id: 'sci_7',
-    type: QuestionType.JUDGE,
-    content: '相对论的创立表明时间空间与物质及其运动状态是可以分离的。',
-    correctAnswer: false,
-    mnemonic: '相对论 = 时空物运密不可分',
-    tags: ['物理哲学']
-  },
-  {
-    id: 'sci_8',
-    type: QuestionType.JUDGE,
-    content: '微分为无穷小量，其哲学意义是微分的零与非零的统一。',
-    correctAnswer: true,
-    mnemonic: '零与非零的关节点',
+    content: '非欧几何的创立表明？',
+    options: ['欧式几何是错误的', '欧式几何所描述的空间形式只是自然界多种空间形式的一种', '空间只有一种形式', '几何学没有意义'],
+    correctAnswer: '欧式几何所描述的空间形式只是自然界多种空间形式的一种',
+    mnemonic: '欧几只是之一 (多种空间)',
     tags: ['数学哲学']
   },
   {
-    id: 'sci_9',
-    type: QuestionType.JUDGE,
-    content: '科学理论的进步表现为一个不断的渐进过程 (只量变)。',
-    correctAnswer: false,
-    mnemonic: '进步 = 渐进(量变) + 飞跃(质变) 的统一',
-    tags: ['科学发展']
+    id: 'choice_8',
+    type: QuestionType.CHOICE,
+    content: '量子力学讨论中的“月亮问题”实质是？',
+    options: ['月亮是否存在', '微观客体的本来面目是否可知、对离开主体的客观事物的认识是否可能', '月亮的引力作用', '观测仪器的精度'],
+    correctAnswer: '微观客体的本来面目是否可知、对离开主体的客观事物的认识是否可能',
+    mnemonic: '月亮在看它时才存在吗？(客观性)',
+    tags: ['物理哲学']
+  },
+  {
+    id: 'choice_9',
+    type: QuestionType.CHOICE,
+    content: '系统非加和性的实质是？',
+    options: ['整体等于部分之和', '整体性质和功能不等于部分性质和功能的简单叠加', '部分决定整体', '整体是可以分割的'],
+    correctAnswer: '整体性质和功能不等于部分性质和功能的简单叠加',
+    mnemonic: '1+1≠2 (整体涌现性)',
+    tags: ['系统论']
+  },
+  {
+    id: 'choice_10',
+    type: QuestionType.CHOICE,
+    content: '研究系统演化的“时间箭头”实质是？',
+    options: ['它代表真实的自然演化过程具有不可逆性', '时间的循环', '物理错觉', '可逆过程'],
+    correctAnswer: '它代表真实的自然演化过程具有不可逆性',
+    mnemonic: '箭头=不可逆',
+    tags: ['系统演化']
+  },
+  // 11 is duplicate of 4 (Relativity) in original text, skipped or treated as reinforcement.
+  {
+    id: 'choice_12',
+    type: QuestionType.CHOICE,
+    content: '自然辩证法的学科性质是？',
+    options: ['纯粹哲学', '纯粹科学', '马克思主义哲学的一个组成部分、连接马哲与科技的中介和桥梁', '社会学'],
+    correctAnswer: '马克思主义哲学的一个组成部分、连接马哲与科技的中介和桥梁',
+    mnemonic: '马哲组成，哲科桥梁',
+    tags: ['绪论']
+  },
+  {
+    id: 'choice_13',
+    type: QuestionType.CHOICE,
+    content: '自然辩证法产生的部分学科基础是？',
+    options: ['相对论', '达尔文进化论、能量守恒定律', '控制论', '大爆炸理论'],
+    correctAnswer: '达尔文进化论、能量守恒定律',
+    mnemonic: '达进能守 (19世纪)',
+    tags: ['绪论']
+  },
+  {
+    id: 'choice_14',
+    type: QuestionType.CHOICE,
+    content: '科学技术的一般性质是？',
+    options: ['有阶级性', '无阶级性、一般意义上的生产力', '政治性', '局限性'],
+    correctAnswer: '无阶级性、一般意义上的生产力',
+    mnemonic: '科技无阶级，是生产力',
+    tags: ['科技观']
+  },
+  {
+    id: 'choice_15',
+    type: QuestionType.CHOICE,
+    content: '可持续发展观是为了？',
+    options: ['解决人与自然的对立和矛盾', '限制经济发展', '回归原始社会', '单纯保护环境'],
+    correctAnswer: '解决人与自然的对立和矛盾',
+    mnemonic: '和解人与自然',
+    tags: ['可持续发展']
+  },
+  {
+    id: 'choice_16',
+    type: QuestionType.CHOICE,
+    content: '结构型数学是？',
+    options: ['研究数值计算', '研究数学结构及其关系的科学', '代数学', '几何学'],
+    correctAnswer: '研究数学结构及其关系的科学',
+    mnemonic: '结构型研究结构',
+    tags: ['数学哲学']
+  },
+  {
+    id: 'choice_17',
+    type: QuestionType.CHOICE,
+    content: '科学与非科学的区别是？',
+    options: ['前者不可检验', '前者可检验、前者满足可重复性', '后者更正确', '没有区别'],
+    correctAnswer: '前者可检验、前者满足可重复性',
+    mnemonic: '科学=可检验+可重复',
+    tags: ['科学划界']
+  },
+  {
+    id: 'choice_18',
+    type: QuestionType.CHOICE,
+    content: '系统的整体性原理是指？',
+    options: ['整体等于部分和', '整体的性质和功能不等于部分和', '整体包含部分', '部分优于整体'],
+    correctAnswer: '整体的性质和功能不等于部分和',
+    mnemonic: '整体≠部分和',
+    tags: ['系统论']
   },
 
-  // --- 技术观 (科技关系、生产力) ---
+  // --- 判断题 (1-32) ---
   {
-    id: 'tech_1',
-    type: QuestionType.CHOICE,
-    content: '关于科学与技术的关系，下列说法正确的是？',
-    options: ['科学是直接生产力', '技术是潜在生产力', '科学回答“是什么/为什么”，技术回答“做什么/怎么做”', '二者没有区别'],
-    correctAnswer: '科学回答“是什么/为什么”，技术回答“做什么/怎么做”',
-    mnemonic: '科懂原理(Why)，技重操作(How)',
-    tags: ['科技关系']
-  },
-  {
-    id: 'tech_2',
-    type: QuestionType.CHOICE,
-    content: '科学技术是第一生产力，其中科学通常表现为？',
-    options: ['直接生产力', '潜在生产力 (知识形态)', '现实生产力', '物质生产力'],
-    correctAnswer: '潜在生产力 (知识形态)',
-    mnemonic: '科潜技直 (科学潜在，技术直接)',
-    tags: ['生产力', '重点']
-  },
-  {
-    id: 'tech_3',
+    id: 'judge_1',
     type: QuestionType.JUDGE,
-    content: '技术本身是中性的，但被何种主体所用则带有功利性和目的性。',
+    content: '任何物质系统的整体与部分的关系都是加和性与非加和性的统一。',
     correctAnswer: true,
-    mnemonic: '技术中性，人用则偏',
-    tags: ['技术伦理']
+    mnemonic: '既有加和(如质量)，也有非加和(如功能)',
+    tags: ['系统论']
   },
   {
-    id: 'tech_4',
-    type: QuestionType.CHOICE,
-    content: '星野芳郎提出的三次技术更迭中，第三次技术体系的主导技术是？',
-    options: ['蒸汽机', '电力与内燃机', '原子能、计算机、空间技术 (微电子)', '生物技术'],
-    correctAnswer: '原子能、计算机、空间技术 (微电子)',
-    mnemonic: '一汽二电三核电 (蒸汽-电力-核/电)',
-    tags: ['技术史']
+    id: 'judge_2',
+    type: QuestionType.JUDGE,
+    content: '作为系统的物质整体，其根本属性是加和性。',
+    correctAnswer: false,
+    mnemonic: '根本属性是“非加和性” (整体涌现)',
+    tags: ['系统论']
   },
-
-  // --- 方法论 (归纳演绎、模型、创新) ---
   {
-    id: 'method_1',
+    id: 'judge_3',
+    type: QuestionType.JUDGE,
+    content: '光速c、普朗克常量h是标志不同层次物质运动转化的关节点。',
+    correctAnswer: true,
+    mnemonic: 'c分高速低速，h分宏观微观',
+    tags: ['物理哲学']
+  },
+  {
+    id: 'judge_4',
+    type: QuestionType.JUDGE,
+    content: '自组织理论表明，偶然性在进化中起决定作用。',
+    correctAnswer: false,
+    mnemonic: '偶然性只在“远离平衡态”时才起决定作用',
+    tags: ['自组织']
+  },
+  {
+    id: 'judge_5',
+    type: QuestionType.JUDGE,
+    content: '科学和非科学的区别在于前者使用人工语言，后者使用自然语言。',
+    correctAnswer: false,
+    mnemonic: '区别在于“可检验、可重复”等，不是语言',
+    tags: ['科学划界']
+  },
+  {
+    id: 'judge_6',
     type: QuestionType.JUDGE,
     content: '“方法无用论”是经验主义，“方法万能论”是教条主义。',
     correctAnswer: true,
-    mnemonic: '无用靠经验(瞎猫死耗子)，万能是教条(死板)',
+    mnemonic: '无用=经验，万能=教条',
     tags: ['方法论']
   },
   {
-    id: 'method_2',
-    type: QuestionType.CHOICE,
-    content: '从个别到一般的推理方法是？',
-    options: ['演绎法', '归纳法', '类比法', '直觉法'],
-    correctAnswer: '归纳法',
-    mnemonic: '归纳 = 个别 -> 一般 (收集个性)',
-    tags: ['逻辑方法']
-  },
-  {
-    id: 'method_3',
-    type: QuestionType.CHOICE,
-    content: '从一般到个别的推理方法是？',
-    options: ['演绎法', '归纳法', '类比法', '移植法'],
-    correctAnswer: '演绎法',
-    mnemonic: '演绎 = 一般 -> 个别 (大前提推小结论)',
-    tags: ['逻辑方法']
-  },
-  {
-    id: 'method_4',
+    id: 'judge_7',
     type: QuestionType.JUDGE,
-    content: '归纳方法的局限性在于结论往往超出前提范围，具有或然性。',
-    correctAnswer: true,
-    mnemonic: '归纳不保真 (黑天鹅事件)',
-    tags: ['逻辑方法']
-  },
-  {
-    id: 'method_5',
-    type: QuestionType.CHOICE,
-    content: '穆勒五法 (求同、求异等) 属于哪种逻辑方法？',
-    options: ['演绎推理', '归纳推理', '类比推理', '直觉思维'],
-    correctAnswer: '归纳推理',
-    mnemonic: '穆勒五法探因果，属于归纳',
-    tags: ['逻辑方法']
-  },
-  {
-    id: 'method_6',
-    type: QuestionType.CHOICE,
-    content: '把适用于一个对象的概念、原理或方法用于另一个对象，从而获得突破的方法是？',
-    options: ['归纳法', '类比移植法', '数学建模', '黑箱方法'],
-    correctAnswer: '类比移植法',
-    mnemonic: '他山之石，可以攻玉 (移植)',
-    tags: ['创新方法']
-  },
-  {
-    id: 'method_7',
-    type: QuestionType.CHOICE,
-    content: '公理体系需要满足的三个条件是？',
-    options: ['复杂性、多样性、模糊性', '无矛盾性(一致性)、独立性、完备性', '主观性、客观性、能动性', '真理性、价值性、实践性'],
-    correctAnswer: '无矛盾性(一致性)、独立性、完备性',
-    mnemonic: '独完无 (独顽舞 - 独立/完备/无矛盾)',
-    tags: ['数学方法']
-  },
-  {
-    id: 'method_8',
-    type: QuestionType.JUDGE,
-    content: '数学模型方法本质上是一种逻辑分析方法。',
+    content: '数学方法是一种单纯的逻辑分析方法。',
     correctAnswer: false,
-    mnemonic: '数学模型是“形式化”和“定量化”的抽象，不仅是逻辑',
+    mnemonic: '数学不仅需要逻辑，还需要内容',
     tags: ['数学方法']
   },
   {
-    id: 'method_9',
+    id: 'judge_8',
+    type: QuestionType.JUDGE,
+    content: '科学理论的进步表现为一个不断的渐进过程。',
+    correctAnswer: false,
+    mnemonic: '进步=渐进(量变)+飞跃(质变)',
+    tags: ['科学发展']
+  },
+  {
+    id: 'judge_9',
+    type: QuestionType.JUDGE,
+    content: '技术本身是中性的，被何主体所用则带有功利性。',
+    correctAnswer: true,
+    mnemonic: '技术中性，人用偏颇',
+    tags: ['技术伦理']
+  },
+  {
+    id: 'judge_10',
+    type: QuestionType.JUDGE,
+    content: '在一个时代的技术中，往往存在一个主导技术。',
+    correctAnswer: true,
+    mnemonic: '如蒸汽时代、电气时代',
+    tags: ['技术史']
+  },
+  {
+    id: 'judge_11',
+    type: QuestionType.JUDGE,
+    content: '宇宙的无限性既无法证实也无法证伪，因此是无意义的。',
+    correctAnswer: false,
+    mnemonic: '有意义，推动了探索',
+    tags: ['宇宙观']
+  },
+  {
+    id: 'judge_12',
+    type: QuestionType.JUDGE,
+    content: '“大爆炸宇宙学”证实了宇宙的有限性。',
+    correctAnswer: false,
+    mnemonic: '只是假说，尚未完全证实',
+    tags: ['宇宙观']
+  },
+  {
+    id: 'judge_13',
+    type: QuestionType.JUDGE,
+    content: '公理化的方法局限性在于它不是科学发现的方法。',
+    correctAnswer: false,
+    mnemonic: '公理化置换公式可催生新理论，也是发现方法',
+    tags: ['方法论']
+  },
+  {
+    id: 'judge_14',
+    type: QuestionType.JUDGE,
+    content: '理想模型和理想实验对物质第一性原则提出了挑战。',
+    correctAnswer: false,
+    mnemonic: '不挑战，前提仍是物质第一性',
+    tags: ['方法论']
+  },
+  {
+    id: 'judge_15',
+    type: QuestionType.JUDGE,
+    content: '任何科学技术的成果，既有正价值，又有负价值。',
+    correctAnswer: true,
+    mnemonic: '双刃剑 (利弊共存)',
+    tags: ['科技价值']
+  },
+  {
+    id: 'judge_16',
     type: QuestionType.JUDGE,
     content: '逆向思维的哲学依据是辩证法的对立统一规律。',
     correctAnswer: true,
-    mnemonic: '逆向 = 看到对立面',
+    mnemonic: '逆向=对立面',
     tags: ['创新思维']
   },
-  
-  // --- 其他高频考点 ---
   {
-    id: 'misc_1',
+    id: 'judge_17',
     type: QuestionType.JUDGE,
-    content: '量子力学中的“月亮问题”讨论的是微观客体是否具有不依赖于主体的客观实在性。',
+    content: '托勒密的“地心说”和哥白尼的“日心说”各有自己的理论依据。',
     correctAnswer: true,
-    mnemonic: '月亮在看它时才存在吗？(客观性问题)',
-    tags: ['量子力学']
+    mnemonic: '参考系不同，各有依据',
+    tags: ['科学史']
   },
   {
-    id: 'misc_2',
-    type: QuestionType.CHOICE,
-    content: '科学共同体必须遵守的范式不包括？',
-    options: ['共同的世界观', '共同的仪器设备', '共同的薪资标准', '共同的方法论'],
-    correctAnswer: '共同的薪资标准',
-    mnemonic: '范式是学术的，不是发工资的',
-    tags: ['科学社会学']
+    id: 'judge_18',
+    type: QuestionType.JUDGE,
+    content: '按照辩证法，科学问题是个“具体问题具体分析”的过程，因此不存在通用的科学方法论。',
+    correctAnswer: false,
+    mnemonic: '存在共性，哲学就是通用方法',
+    tags: ['方法论']
   },
   {
-    id: 'misc_3',
+    id: 'judge_19',
     type: QuestionType.JUDGE,
-    content: '可持续发展不仅要满足当代人的需求，还要不损害后代人满足其需求的能力。',
+    content: '许多科学家不懂哲学也能做贡献，因此提倡科学家学习哲学没有意义。',
+    correctAnswer: false,
+    mnemonic: '哲学能少走弯路 (理性战胜感性)',
+    tags: ['科技与哲学']
+  },
+  {
+    id: 'judge_20',
+    type: QuestionType.JUDGE,
+    content: '自然界的客观性是指物质不灭性。',
+    correctAnswer: false,
+    mnemonic: '客观性范围更大 (包括关系客观)',
+    tags: ['自然观']
+  },
+  {
+    id: 'judge_21',
+    type: QuestionType.JUDGE,
+    content: '宇宙的无限性是指人类对宇宙的认识是无限的。',
+    correctAnswer: false,
+    mnemonic: '无限性包括本体论(存在)和认识论(认知)两层',
+    tags: ['宇宙观']
+  },
+  {
+    id: 'judge_22',
+    type: QuestionType.JUDGE,
+    content: '机械自然观的根本缺陷是把运动的原因归结为外力的作用。',
     correctAnswer: true,
-    mnemonic: '代际公平 (管现在也要管未来)',
+    mnemonic: '机械=外力推动',
+    tags: ['自然观']
+  },
+  {
+    id: 'judge_23',
+    type: QuestionType.JUDGE,
+    content: '演化的概念与发展的概念不同，前者既包含进化论，也包含退化论。',
+    correctAnswer: true,
+    mnemonic: '演化 = 进 + 退',
+    tags: ['演化论']
+  },
+  {
+    id: 'judge_24',
+    type: QuestionType.JUDGE,
+    content: '“牧场悖论”的实质是个体利益与集体利益的矛盾。',
+    correctAnswer: true,
+    mnemonic: '个人养羊vs集体草场',
     tags: ['可持续发展']
+  },
+  {
+    id: 'judge_25',
+    type: QuestionType.JUDGE,
+    content: '解决人类和自然界的对立要靠实施科学发展观。',
+    correctAnswer: true,
+    mnemonic: '科学发展观解矛盾',
+    tags: ['可持续发展']
+  },
+  {
+    id: 'judge_26',
+    type: QuestionType.JUDGE,
+    content: '《周易》是古代的预测学。',
+    correctAnswer: false,
+    mnemonic: '周易算卦≠科学预测',
+    tags: ['伪科学']
+  },
+  {
+    id: 'judge_27',
+    type: QuestionType.JUDGE,
+    content: '中国古典哲学的阴阳分析是古代的辩证法。',
+    correctAnswer: true,
+    mnemonic: '阴阳=对立统一',
+    tags: ['哲学史']
+  },
+  {
+    id: 'judge_28',
+    type: QuestionType.JUDGE,
+    content: '中医学靠的是经验看病，因此不是科学。',
+    correctAnswer: false,
+    mnemonic: '经验不是判定标准',
+    tags: ['科学划界']
+  },
+  {
+    id: 'judge_29',
+    type: QuestionType.JUDGE,
+    content: '波普尔认为，哲学是不能检验真伪的，因此不是科学。',
+    correctAnswer: false,
+    mnemonic: '哲学可间接检验',
+    tags: ['科学划界']
+  },
+  {
+    id: 'judge_30',
+    type: QuestionType.JUDGE,
+    content: '教学中知识和方法的关系就是“干粮”和“猎枪”的关系。',
+    correctAnswer: false,
+    mnemonic: '知识是干粮，方法是猎枪 (题干说反了或者语境是肯定的？ OCR显示X。原话通常是肯定的，但这里OCR判错，可能强调关系不仅仅是这样，或者是“关系”表述有问题。按OCR答案为错)',
+    tags: ['教育方法']
+  },
+  {
+    id: 'judge_31',
+    type: QuestionType.JUDGE,
+    content: '归纳方法由于个别事物的不可穷尽，因此它的一般结论是靠不住的。',
+    correctAnswer: false,
+    mnemonic: '不能说“靠不住”，只是具有或然性',
+    tags: ['逻辑方法']
+  },
+  {
+    id: 'judge_32',
+    type: QuestionType.JUDGE,
+    content: '演绎方法的大前提隐含了要推出（个别）的结论，因此是无意义的。',
+    correctAnswer: false,
+    mnemonic: '有意义，可发现问题/纠错',
+    tags: ['逻辑方法']
   }
 ];
