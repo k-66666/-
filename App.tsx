@@ -1,43 +1,58 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuestionBank } from './hooks/useQuestionBank';
 import { Layout } from './components/Layout';
 import { QuizCard } from './components/QuizCard';
 import { StatsView } from './components/StatsView';
 import { QuestionManager } from './components/QuestionManager';
 import { Question } from './types';
-import { RotateCcw, AlertTriangle } from 'lucide-react';
+import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const { questions, progress, addQuestion, updateQuestion, deleteQuestion, recordAttempt, resetProgress, getMistakes, loading } = useQuestionBank();
-  const [activeTab, setActiveTab] = useState<'quiz' | 'stats' | 'manage'>('quiz');
+  const [activeTab, setActiveTab] = useState<'quiz' | 'mistakes' | 'stats' | 'manage'>('quiz');
   
-  // Mistake Mode State
-  const [mistakeMode, setMistakeMode] = useState(false);
+  // Theme Management
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Check system preference on load
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
   
   const mistakeQuestions = useMemo(() => getMistakes(), [questions, progress]);
+  const isMistakeMode = activeTab === 'mistakes';
   
-  // Logic to determine which question to show next
   const getNextQuestion = (): Question | null => {
     let pool = questions;
 
-    // Filter if in mistake mode
-    if (mistakeMode) {
+    if (isMistakeMode) {
       if (mistakeQuestions.length === 0) return null;
       pool = mistakeQuestions;
     }
 
     if (pool.length === 0) return null;
 
-    // Algorithm:
-    // 1. Prioritize Unanswered (if not in mistake mode)
-    if (!mistakeMode) {
+    if (!isMistakeMode) {
         const unanswered = pool.filter(q => !progress.questionStats[q.id]);
         if (unanswered.length > 0) {
             return unanswered[Math.floor(Math.random() * unanswered.length)];
         }
     }
 
-    // 2. Prioritize WRONG last attempt
     const wrongLast = pool.filter(q => {
       const stats = progress.questionStats[q.id];
       return stats && stats.attempts.length > 0 && !stats.attempts[stats.attempts.length - 1];
@@ -46,19 +61,16 @@ const App: React.FC = () => {
       return wrongLast[Math.floor(Math.random() * wrongLast.length)];
     }
 
-    // 3. Random fallback
     return pool[Math.floor(Math.random() * pool.length)];
   };
 
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
-  // Initialize/Update question when modes change or data loads
   React.useEffect(() => {
     if (!loading && questions.length > 0) {
-        // Only set if null or we switched modes
         setCurrentQuestion(getNextQuestion());
     }
-  }, [loading, questions.length, mistakeMode]);
+  }, [loading, questions.length, activeTab]); // Re-roll when switching tabs
 
   const handleAnswer = (isCorrect: boolean) => {
     if (currentQuestion) {
@@ -71,36 +83,34 @@ const App: React.FC = () => {
     setCurrentQuestion(next);
   };
 
-  // Calculate global mastery for the progress bar
-  // Definition of Mastery: Attempted at least once AND last attempt was correct
   const masteredCount = Object.values(progress.questionStats).filter(s => s.attempts.length > 0 && s.attempts[s.attempts.length - 1] === true).length;
   const masteryPercentage = questions.length > 0 ? Math.round((masteredCount / questions.length) * 100) : 0;
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center text-primary font-bold">Loading...</div>;
+    return <div className="h-screen flex items-center justify-center text-blue-600 font-bold dark:bg-slate-950 dark:text-blue-400">数据加载中...</div>;
   }
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'quiz' && (
+    <Layout 
+      activeTab={activeTab} 
+      onTabChange={setActiveTab}
+      theme={theme}
+      toggleTheme={toggleTheme}
+    >
+      {(activeTab === 'quiz' || activeTab === 'mistakes') && (
         <div className="h-full flex flex-col">
-            {/* Mistake Mode Toggle */}
-            <div className="mb-4 flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                    <button 
-                        onClick={() => setMistakeMode(!mistakeMode)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${mistakeMode ? 'bg-red-500 text-white shadow-lg shadow-red-200' : 'bg-slate-100 text-slate-500'}`}
-                    >
-                        <AlertTriangle className="w-3 h-3" />
-                        {mistakeMode ? '错题本模式 ON' : '错题本模式 OFF'}
-                    </button>
-                    {mistakeMode && (
-                        <span className="text-xs text-red-400 font-medium">
-                            剩余 {mistakeQuestions.length} 题
-                        </span>
-                    )}
+            {/* Mistake Tab Header Info */}
+            {activeTab === 'mistakes' && (
+                <div className="mb-4 px-2">
+                    <div className="bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-center justify-between">
+                         <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-bold text-sm">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span>错题本 ({mistakeQuestions.length})</span>
+                         </div>
+                         <span className="text-xs text-orange-600 dark:text-orange-500">做对即移出</span>
+                    </div>
                 </div>
-            </div>
+            )}
 
           {currentQuestion ? (
             <QuizCard 
@@ -109,19 +119,30 @@ const App: React.FC = () => {
               masteryPercentage={masteryPercentage}
               onAnswer={handleAnswer} 
               onNext={handleNext}
+              isMistakeMode={isMistakeMode}
             />
           ) : (
-             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4 p-8 text-center">
-              {mistakeMode ? (
+             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-6 p-8 text-center animate-pop">
+              {activeTab === 'mistakes' ? (
                   <>
-                    <div className="p-4 bg-green-100 text-green-600 rounded-full mb-2"><RotateCcw className="w-8 h-8"/></div>
-                    <p className="font-bold text-slate-700">太棒了！错题已全部消灭。</p>
-                    <button onClick={() => setMistakeMode(false)} className="text-primary font-bold underline">返回普通模式</button>
+                    <div className="p-6 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full mb-2">
+                        <CheckCircle2 className="w-12 h-12"/>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">错题已清零！</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">你太棒了，所有错题都已攻克。</p>
+                    </div>
+                    <button 
+                        onClick={() => setActiveTab('quiz')} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none transition-all"
+                    >
+                        去刷题
+                    </button>
                   </>
               ) : (
                   <>
-                     <p>题库为空，请先添加题目。</p>
-                     <button onClick={() => setActiveTab('manage')} className="text-primary font-bold">去添加</button>
+                     <p className="text-slate-500 dark:text-slate-400">题库为空，请先添加题目。</p>
+                     <button onClick={() => setActiveTab('manage')} className="text-blue-600 font-bold dark:text-blue-400">去添加</button>
                   </>
               )}
             </div>
@@ -132,13 +153,15 @@ const App: React.FC = () => {
       {activeTab === 'stats' && (
         <div className="h-full flex flex-col">
             <StatsView progress={progress} totalQuestions={questions.length} />
-            <button 
-                onClick={() => { if(confirm('确定要重置所有进度吗？')) resetProgress(); }}
-                className="mt-8 mx-auto flex items-center gap-2 text-sm text-slate-400 hover:text-red-500 transition-colors p-4"
-            >
-                <RotateCcw className="w-4 h-4" />
-                重置学习进度
-            </button>
+            <div className="mt-8 flex justify-center">
+                <button 
+                    onClick={() => { if(confirm('确定要重置所有学习进度吗？这将清空所有答题记录。')) resetProgress(); }}
+                    className="flex items-center gap-2 text-sm text-slate-400 hover:text-red-500 transition-colors p-4 dark:hover:text-red-400"
+                >
+                    <RotateCcw className="w-4 h-4" />
+                    重置学习进度
+                </button>
+            </div>
         </div>
       )}
 
