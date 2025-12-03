@@ -5,7 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <!-- Updated viewport for mobile/WeChat: disable zooming, force full height, handle safe areas -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Open Graph / WeChat Share Metadata -->
     <title>自然辩证法复习神器</title>
+    <meta name="description" content="高效刷题，智能错题本，助你期末高分飘过！" />
+    
+    <!-- Facebook / WeChat / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://your-domain.com/" />
+    <meta property="og:title" content="自然辩证法复习神器" />
+    <meta property="og:description" content="高效刷题，智能错题本，助你期末高分飘过！" />
+    <meta property="og:image" content="/share.png" />
+    
+    <!-- WeChat specific hack: sometimes it picks the first image in body -->
+    <meta itemprop="name" content="自然辩证法复习神器"/>
+    <meta itemprop="image" content="/share.png" />
+    <meta name="description" itemprop="description" content="高效刷题，智能错题本，助你期末高分飘过！" />
+
     <script>
       // Suppress the annoying Tailwind CDN warning
       const originalWarn = console.warn;
@@ -124,6 +140,11 @@
 </style>
 </head>
   <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <!-- WeChat Share Image Hack (Must be >300x300px for best results) -->
+    <div style="display:none; width:0px; height:0px; overflow:hidden;">
+        <img src="/share.png" width="300" height="300" />
+    </div>
+    
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
