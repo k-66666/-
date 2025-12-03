@@ -1,13 +1,18 @@
 import { Question, QuestionType } from '../types';
 
 export const SEED_QUESTIONS: Question[] = [
-  // --- 选择题 (1-18) ---
+  // --- 选择题 (1-18) Rewritten Distractors ---
   {
     id: 'choice_1',
     type: QuestionType.CHOICE,
     content: '自然辩证法最早理论体系来源于？',
-    options: ['马克思《资本论》', '恩格斯《自然辩证法》', '黑格尔《小逻辑》', '达尔文《进化论》'],
-    correctAnswer: '恩格斯《自然辩证法》',
+    options: [
+      '马克思关于政治经济学的巨著《资本论》', 
+      '恩格斯对自然科学哲学反思的《自然辩证法》', 
+      '黑格尔关于绝对精神演化的《小逻辑》', 
+      '达尔文关于生物演化的《物种起源》'
+    ],
+    correctAnswer: '恩格斯对自然科学哲学反思的《自然辩证法》',
     mnemonic: '恩自 (恩格斯-自然辩证法)',
     tags: ['绪论']
   },
@@ -15,8 +20,13 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_2',
     type: QuestionType.CHOICE,
     content: '数理方程中许多不同形态的物理运动规律可以用同一个方程来描述，这表明？',
-    options: ['物理规律的偶然性', '物质及其运动规律的一定同一性', '数学的巧合', '运动形式的单一性'],
-    correctAnswer: '物质及其运动规律的一定同一性',
+    options: [
+      '物理运动规律具有极大的偶然性和不确定性', 
+      '这些物质及其运动规律具有深层次的一定同一性', 
+      '数学形式的普遍性决定了物理内容的同一性', 
+      '不同形态的运动形式在本质上是完全相同的'
+    ],
+    correctAnswer: '这些物质及其运动规律具有深层次的一定同一性',
     mnemonic: '方程同，规律同 (同一性)',
     tags: ['物理哲学']
   },
@@ -24,8 +34,13 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_3',
     type: QuestionType.CHOICE,
     content: '微分作为无穷小量，其哲学意义是？',
-    options: ['纯粹的数学技巧', '微分的零与非零的统一，代表质变的关节点', '绝对的零', '不可知的量'],
-    correctAnswer: '微分的零与非零的统一，代表质变的关节点',
+    options: [
+      '它是数学计算中一种理想化的纯粹假设技巧', 
+      '微分是零与非零的辩证统一，是质变的关节点', 
+      '它代表了物质无限可分的机械唯物主义观点', 
+      '它是不可知论在数学领域的具体表现形式'
+    ],
+    correctAnswer: '微分是零与非零的辩证统一，是质变的关节点',
     mnemonic: '零与非零，关节点',
     tags: ['数学哲学']
   },
@@ -33,7 +48,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_4',
     type: QuestionType.CHOICE,
     content: '相对论的创立表明？',
-    options: ['时间空间与物质及其运动状态密不可分', '时间是绝对的', '空间是静止的', '物质与运动无关'],
+    options: [
+      '时间空间与物质及其运动状态密不可分', 
+      '时间和空间是独立于物质存在的绝对容器', 
+      '物质的运动状态不影响其时空度量属性', 
+      '牛顿的绝对时空观才是客观真理'
+    ],
     correctAnswer: '时间空间与物质及其运动状态密不可分',
     mnemonic: '相对论=时空物运不分家',
     tags: ['物理哲学']
@@ -42,7 +62,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_5',
     type: QuestionType.CHOICE,
     content: '量子力学的创立表明？',
-    options: ['经典因果律的胜利', '昭示了一种不同于牛顿力学性质的新的因果观和规律观', '微观世界无规律', '上帝掷骰子'],
+    options: [
+      '微观粒子遵循与宏观物体完全相同的经典因果律', 
+      '昭示了一种不同于牛顿力学性质的新的因果观和规律观', 
+      '微观世界本质上是杂乱无章、不可认识的', 
+      '因果关系只存在于宏观领域，微观领域不存在因果'
+    ],
     correctAnswer: '昭示了一种不同于牛顿力学性质的新的因果观和规律观',
     mnemonic: '量子=新因果 (非牛顿)',
     tags: ['物理哲学']
@@ -51,7 +76,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_6',
     type: QuestionType.CHOICE,
     content: '科学划界的标准主要包括？',
-    options: ['主观性、模糊性', '可观察性、可控制性、可检验性、可重复性', '权威性、历史性', '不可证伪性'],
+    options: [
+      '主观性、模糊性、权威性、历史性', 
+      '可观察性、可控制性、可检验性、可重复性', 
+      '逻辑性、抽象性、数学性、演绎性', 
+      '实用性、经济性、社会性、伦理性'
+    ],
     correctAnswer: '可观察性、可控制性、可检验性、可重复性',
     mnemonic: '观控检重 (四性)',
     tags: ['科学观']
@@ -60,7 +90,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_7',
     type: QuestionType.CHOICE,
     content: '非欧几何的创立表明？',
-    options: ['欧式几何是错误的', '欧式几何所描述的空间形式只是自然界多种空间形式的一种', '空间只有一种形式', '几何学没有意义'],
+    options: [
+      '欧式几何在逻辑上是错误的，不应继续使用', 
+      '欧式几何所描述的空间形式只是自然界多种空间形式的一种', 
+      '空间形式是人的主观直觉，不存在客观多样性', 
+      '几何学的真理性取决于是否符合人类的直观经验'
+    ],
     correctAnswer: '欧式几何所描述的空间形式只是自然界多种空间形式的一种',
     mnemonic: '欧几只是之一 (多种空间)',
     tags: ['数学哲学']
@@ -69,7 +104,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_8',
     type: QuestionType.CHOICE,
     content: '量子力学讨论中的“月亮问题”实质是？',
-    options: ['月亮是否存在', '微观客体的本来面目是否可知、对离开主体的客观事物的认识是否可能', '月亮的引力作用', '观测仪器的精度'],
+    options: [
+      '探讨月球引力对地球潮汐现象的物理影响', 
+      '微观客体的本来面目是否可知、对离开主体的客观事物的认识是否可能', 
+      '研究观测仪器精度对天体测量结果的干扰', 
+      '关于宏观天体运动是否遵循量子规律的争论'
+    ],
     correctAnswer: '微观客体的本来面目是否可知、对离开主体的客观事物的认识是否可能',
     mnemonic: '月亮在看它时才存在吗？(客观性)',
     tags: ['物理哲学']
@@ -78,7 +118,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_9',
     type: QuestionType.CHOICE,
     content: '系统非加和性的实质是？',
-    options: ['整体等于部分之和', '整体性质和功能不等于部分性质和功能的简单叠加', '部分决定整体', '整体是可以分割的'],
+    options: [
+      '系统的整体功能等于各部分功能的算术总和', 
+      '整体性质和功能不等于部分性质和功能的简单叠加', 
+      '系统的各部分之间是孤立的，没有相互作用', 
+      '整体的功能总是小于各部分功能之和'
+    ],
     correctAnswer: '整体性质和功能不等于部分性质和功能的简单叠加',
     mnemonic: '1+1≠2 (整体涌现性)',
     tags: ['系统论']
@@ -87,17 +132,26 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_10',
     type: QuestionType.CHOICE,
     content: '研究系统演化的“时间箭头”实质是？',
-    options: ['它代表真实的自然演化过程具有不可逆性', '时间的循环', '物理错觉', '可逆过程'],
+    options: [
+      '它代表真实的自然演化过程具有不可逆性', 
+      '时间是循环往复的，没有方向性', 
+      '这是人类主观感知造成的物理错觉', 
+      '在微观物理过程中时间完全是可逆的'
+    ],
     correctAnswer: '它代表真实的自然演化过程具有不可逆性',
     mnemonic: '箭头=不可逆',
     tags: ['系统演化']
   },
-  // 11 is duplicate of 4 (Relativity) in original text, skipped or treated as reinforcement.
   {
     id: 'choice_12',
     type: QuestionType.CHOICE,
     content: '自然辩证法的学科性质是？',
-    options: ['纯粹哲学', '纯粹科学', '马克思主义哲学的一个组成部分、连接马哲与科技的中介和桥梁', '社会学'],
+    options: [
+      '关于自然界具体现象研究的实证科学', 
+      '脱离自然科学基础的纯粹思辨哲学', 
+      '马克思主义哲学的一个组成部分、连接马哲与科技的中介和桥梁', 
+      '研究社会历史发展规律的社会学分支'
+    ],
     correctAnswer: '马克思主义哲学的一个组成部分、连接马哲与科技的中介和桥梁',
     mnemonic: '马哲组成，哲科桥梁',
     tags: ['绪论']
@@ -106,7 +160,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_13',
     type: QuestionType.CHOICE,
     content: '自然辩证法产生的部分学科基础是？',
-    options: ['相对论', '达尔文进化论、能量守恒定律', '控制论', '大爆炸理论'],
+    options: [
+      '爱因斯坦相对论、量子力学', 
+      '达尔文进化论、能量守恒定律', 
+      '维纳的控制论、香农的信息论', 
+      '普利高津的耗散结构理论'
+    ],
     correctAnswer: '达尔文进化论、能量守恒定律',
     mnemonic: '达进能守 (19世纪)',
     tags: ['绪论']
@@ -115,7 +174,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_14',
     type: QuestionType.CHOICE,
     content: '科学技术的一般性质是？',
-    options: ['有阶级性', '无阶级性、一般意义上的生产力', '政治性', '局限性'],
+    options: [
+      '具有鲜明的阶级性，服务于特定统治阶级', 
+      '无阶级性、一般意义上的生产力', 
+      '具有强烈的政治性，受政治制度决定', 
+      '只具有理论价值，不具备生产力属性'
+    ],
     correctAnswer: '无阶级性、一般意义上的生产力',
     mnemonic: '科技无阶级，是生产力',
     tags: ['科技观']
@@ -124,7 +188,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_15',
     type: QuestionType.CHOICE,
     content: '可持续发展观是为了？',
-    options: ['解决人与自然的对立和矛盾', '限制经济发展', '回归原始社会', '单纯保护环境'],
+    options: [
+      '解决人与自然的对立和矛盾', 
+      '为了保护环境而停止一切经济增长', 
+      '回归工业革命前的原始生活状态', 
+      '单纯强调经济指标的快速增长'
+    ],
     correctAnswer: '解决人与自然的对立和矛盾',
     mnemonic: '和解人与自然',
     tags: ['可持续发展']
@@ -133,7 +202,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_16',
     type: QuestionType.CHOICE,
     content: '结构型数学是？',
-    options: ['研究数值计算', '研究数学结构及其关系的科学', '代数学', '几何学'],
+    options: [
+      '专注于数值计算和近似求解的应用技术', 
+      '研究数学结构及其关系的科学', 
+      '关于代数方程求解的传统算术', 
+      '研究欧几里得空间图形性质的几何学'
+    ],
     correctAnswer: '研究数学结构及其关系的科学',
     mnemonic: '结构型研究结构',
     tags: ['数学哲学']
@@ -142,7 +216,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_17',
     type: QuestionType.CHOICE,
     content: '科学与非科学的区别是？',
-    options: ['前者不可检验', '前者可检验、前者满足可重复性', '后者更正确', '没有区别'],
+    options: [
+      '前者依赖直觉和顿悟，后者依赖逻辑', 
+      '前者可检验、前者满足可重复性', 
+      '后者在伦理上比前者更高尚', 
+      '两者本质上没有区别，只是研究对象不同'
+    ],
     correctAnswer: '前者可检验、前者满足可重复性',
     mnemonic: '科学=可检验+可重复',
     tags: ['科学划界']
@@ -151,7 +230,12 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_18',
     type: QuestionType.CHOICE,
     content: '系统的整体性原理是指？',
-    options: ['整体等于部分和', '整体的性质和功能不等于部分和', '整体包含部分', '部分优于整体'],
+    options: [
+      '整体的功能等于各部分功能之和', 
+      '整体的性质和功能不等于部分和', 
+      '整体只是部分的机械组合', 
+      '部分的功能决定了整体的功能'
+    ],
     correctAnswer: '整体的性质和功能不等于部分和',
     mnemonic: '整体≠部分和',
     tags: ['系统论']

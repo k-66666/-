@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Question, UserProgress, INITIAL_PROGRESS } from '../types';
 import { SEED_QUESTIONS } from '../data/seed';
 
-// Updated storage keys to force fresh data load
-const STORAGE_KEY_QUESTIONS = 'dm_questions_v5';
-const STORAGE_KEY_PROGRESS = 'dm_progress_v5';
+// Updated storage key to force fresh data load for new complex distractors
+const STORAGE_KEY_QUESTIONS = 'dm_questions_v6';
+const STORAGE_KEY_PROGRESS = 'dm_progress_v6';
 
 export const useQuestionBank = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -52,20 +52,21 @@ export const useQuestionBank = () => {
 
   const recordAttempt = (questionId: string, isCorrect: boolean) => {
     setProgress(prev => {
-      const stats = prev.questionStats[questionId] || { answered: 0, correct: 0, lastAttemptCorrect: false };
+      const currentStat = prev.questionStats[questionId] || { attempts: [], lastAttemptAt: 0 };
       
-      const newStats = {
-        answered: stats.answered + 1,
-        correct: stats.correct + (isCorrect ? 1 : 0),
-        lastAttemptCorrect: isCorrect
+      const newStat = {
+        attempts: [...currentStat.attempts, isCorrect],
+        lastAttemptAt: Date.now()
       };
+
+      const newStreak = isCorrect ? prev.streak + 1 : 0;
 
       return {
         totalAnswered: prev.totalAnswered + 1,
-        correctCount: prev.correctCount + (isCorrect ? 1 : 0),
+        streak: newStreak,
         questionStats: {
           ...prev.questionStats,
-          [questionId]: newStats
+          [questionId]: newStat
         }
       };
     });
@@ -73,6 +74,19 @@ export const useQuestionBank = () => {
 
   const resetProgress = () => {
     setProgress(INITIAL_PROGRESS);
+  };
+
+  // Helper: Get questions that have been attempted and have WRONG answers in their history
+  // or the last attempt was wrong
+  const getMistakes = () => {
+    return questions.filter(q => {
+      const stat = progress.questionStats[q.id];
+      if (!stat || stat.attempts.length === 0) return false;
+      // If last attempt was wrong, it's definitely a mistake to review
+      if (stat.attempts[stat.attempts.length - 1] === false) return true;
+      // If it has ever been wrong, include it (optional strict mode)
+      return stat.attempts.includes(false);
+    });
   };
 
   return {
@@ -83,6 +97,7 @@ export const useQuestionBank = () => {
     deleteQuestion,
     recordAttempt,
     resetProgress,
+    getMistakes,
     loading
   };
 };

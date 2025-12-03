@@ -1,6 +1,6 @@
 export enum QuestionType {
-  CHOICE = 'CHOICE', // Single or Multi choice treated as picking the right option text
-  JUDGE = 'JUDGE',   // True/False
+  CHOICE = 'CHOICE',
+  JUDGE = 'JUDGE',
 }
 
 export interface Question {
@@ -13,18 +13,19 @@ export interface Question {
   tags?: string[];
 }
 
+export interface QuestionStat {
+  attempts: boolean[]; // List of true/false for every attempt: [false, false, true]
+  lastAttemptAt: number; // Timestamp
+}
+
 export interface UserProgress {
-  totalAnswered: number;
-  correctCount: number;
-  questionStats: Record<string, {
-    answered: number;
-    correct: number;
-    lastAttemptCorrect: boolean;
-  }>;
+  totalAnswered: number; // Total attempts made
+  streak: number; // Current streak of correct answers
+  questionStats: Record<string, QuestionStat>;
 }
 
 export const INITIAL_PROGRESS: UserProgress = {
   totalAnswered: 0,
-  correctCount: 0,
+  streak: 0,
   questionStats: {}
 };
