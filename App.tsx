@@ -103,6 +103,13 @@ const App: React.FC = () => {
     togglePin(id);
   }
 
+  // Handle direct review from Stats page
+  const handleReview = (q: Question) => {
+      setCurrentQuestion(q);
+      setActiveTab('quiz');
+      setQuizKey(k => k + 1);
+  };
+
   // Stats Calculation
   const masteredCount = Object.values(progress.questionStats).filter(s => s.attempts.length > 0 && s.attempts[s.attempts.length - 1] === true).length;
   const masteryPercentage = questions.length > 0 ? Math.round((masteredCount / questions.length) * 100) : 0;
@@ -185,7 +192,12 @@ const App: React.FC = () => {
 
       {activeTab === 'stats' && (
         <div className="h-full flex flex-col">
-            <StatsView progress={progress} totalQuestions={questions.length} questions={questions} />
+            <StatsView 
+                progress={progress} 
+                totalQuestions={questions.length} 
+                questions={questions} 
+                onReview={handleReview}
+            />
             <div className="mt-8 flex justify-center">
                 <button 
                     onClick={() => { if(confirm('确定要重置所有学习进度吗？这将清空所有答题记录。')) resetProgress(); }}

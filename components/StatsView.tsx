@@ -1,15 +1,16 @@
 import React from 'react';
 import { UserProgress, Question, QuestionType } from '../types';
-import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight } from 'lucide-react';
+import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight, Play } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface StatsViewProps {
   progress: UserProgress;
   totalQuestions: number;
   questions: Question[]; // Need questions to identify types
+  onReview: (question: Question) => void;
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, questions }) => {
+export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, questions, onReview }) => {
   const attemptedQuestions = Object.values(progress.questionStats);
   const firstTryCorrectCount = attemptedQuestions.filter(stat => stat.attempts.length > 0 && stat.attempts[0] === true).length;
   const firstTryAccuracy = attemptedQuestions.length > 0
@@ -103,19 +104,36 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
           </h3>
           <div className="space-y-3">
               {hardestQuestions.length > 0 ? hardestQuestions.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50">
-                      <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs font-bold shrink-0">
+                  <button 
+                      key={idx} 
+                      onClick={() => onReview(item.q!)}
+                      className="w-full flex items-start gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-950/50 dark:hover:bg-slate-900 transition-colors text-left group"
+                  >
+                      <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                           {idx + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 mb-1">
                               {item.q?.content}
                           </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                              答案: <span className="text-green-600 dark:text-green-400">
+                                {item.q?.type === QuestionType.JUDGE 
+                                    ? (item.q?.correctAnswer ? '正确' : '错误') 
+                                    : String(item.q?.correctAnswer)
+                                }
+                              </span>
+                          </p>
                       </div>
-                      <div className="text-xs font-bold text-orange-500 shrink-0">
-                          错 {item.failures} 次
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="text-xs font-bold text-orange-500 shrink-0">
+                            错 {item.failures} 次
+                        </div>
+                        <div className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Play className="w-3 h-3 fill-current" />
+                        </div>
                       </div>
-                  </div>
+                  </button>
               )) : (
                   <p className="text-xs text-slate-400 text-center py-4">暂无高频错题，继续保持！</p>
               )}
