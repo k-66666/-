@@ -42,6 +42,10 @@ export const useQuestionBank = () => {
     setQuestions(prev => [...prev, q]);
   };
 
+  const updateQuestion = (updatedQ: Question) => {
+    setQuestions(prev => prev.map(q => q.id === updatedQ.id ? updatedQ : q));
+  };
+
   const deleteQuestion = (id: string) => {
     setQuestions(prev => prev.filter(q => q.id !== id));
   };
@@ -75,6 +79,7 @@ export const useQuestionBank = () => {
     questions,
     progress,
     addQuestion,
+    updateQuestion,
     deleteQuestion,
     recordAttempt,
     resetProgress,

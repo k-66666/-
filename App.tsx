@@ -8,7 +8,7 @@ import { Question } from './types';
 import { RotateCcw } from 'lucide-react';
 
 const App: React.FC = () => {
-  const { questions, progress, addQuestion, deleteQuestion, recordAttempt, resetProgress, loading } = useQuestionBank();
+  const { questions, progress, addQuestion, updateQuestion, deleteQuestion, recordAttempt, resetProgress, loading } = useQuestionBank();
   const [activeTab, setActiveTab] = useState<'quiz' | 'stats' | 'manage'>('quiz');
   
   // Logic to determine which question to show next
@@ -95,6 +95,7 @@ const App: React.FC = () => {
         <QuestionManager 
           questions={questions} 
           onAdd={addQuestion} 
+          onUpdate={updateQuestion}
           onDelete={deleteQuestion} 
         />
       )}
