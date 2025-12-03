@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, Lightbulb, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, Lightbulb, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
   streak: number;
   masteryPercentage: number;
+  answeredCount: number;
+  totalCount: number;
+  mistakeCount: number;
   onAnswer: (isCorrect: boolean) => void;
   onNext: () => void;
   isMistakeMode?: boolean;
 }
 
-export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPercentage, onAnswer, onNext, isMistakeMode }) => {
+export const QuizCard: React.FC<QuizCardProps> = ({ 
+    question, 
+    streak, 
+    masteryPercentage, 
+    answeredCount, 
+    totalCount, 
+    mistakeCount, 
+    onAnswer, 
+    onNext, 
+    isMistakeMode 
+}) => {
   const [selectedOption, setSelectedOption] = useState<string | boolean | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showMnemonic, setShowMnemonic] = useState(false);
@@ -41,10 +54,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
     if (isCorrect) {
       setShowConfetti(true);
       setFlashType('green');
-      // If in mistake mode, give a nice feedback that it's removed
-      if (isMistakeMode) {
-          // Additional logic could go here
-      }
     } else {
       setIsShaking(true);
       setFlashType('red');
@@ -54,8 +63,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
   };
 
   const getOptionStyle = (option: string | boolean) => {
-    // Linear / Flat Style
-    const base = "transition-all duration-200 border-2 font-medium";
+    // Linear / Flat Style Base
+    const base = "transition-all duration-300 border-2 font-medium relative overflow-hidden";
     
     if (!hasAnswered) {
       // Default State
@@ -63,17 +72,20 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
     }
     
     if (option === question.correctAnswer) {
-      // Correct Answer (Always Green)
-      return `${base} bg-green-500 border-green-500 text-white shadow-lg shadow-green-200 dark:shadow-none scale-[1.02]`;
+      // Correct Answer (Always Green, Scaled Up)
+      // 即使没选它，它也是正确答案，必须亮绿灯
+      return `${base} bg-green-500 border-green-500 text-white shadow-xl shadow-green-200/50 dark:shadow-none scale-[1.03] z-10 opacity-100`;
     }
     
     if (option === selectedOption && option !== question.correctAnswer) {
-      // Wrong Selection (Red)
-      return `${base} bg-red-500 border-red-500 text-white shadow-lg shadow-red-200 dark:shadow-none animate-shake`;
+      // Wrong Selection (Gray + Strikethrough)
+      // 选错变灰，加删除线，不再是红色
+      return `${base} bg-slate-500 border-slate-500 text-white line-through opacity-90 animate-shake shadow-none`;
     }
     
-    // Unselected & Incorrect (Fade out)
-    return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-700 opacity-50 cursor-not-allowed`;
+    // Unselected & Incorrect (Fade out significantly)
+    // 没选且不是答案的，大幅弱化
+    return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-30 grayscale cursor-not-allowed scale-95`;
   };
 
   const Confetti = () => (
@@ -96,27 +108,37 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
       
       {showConfetti && <Confetti />}
 
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6 px-1">
-         <div className="flex-1 mr-6">
-            <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">
-               <span>题库掌握度</span>
-               <span>{masteryPercentage}%</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+      {/* Top Info Bar */}
+      <div className="flex items-center justify-between gap-4 mb-4 px-1">
+          {/* Left: Progress Stats */}
+          <div className="flex gap-4">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{answeredCount} / {totalCount}</span>
+              </div>
+              <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-lg ${mistakeCount > 0 ? 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30' : 'text-slate-400 bg-slate-100 dark:bg-slate-800'}`}>
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>错题 {mistakeCount}</span>
+              </div>
+          </div>
+
+          {/* Right: Streak */}
+          <div className={`flex items-center gap-1.5 font-bold transition-transform duration-300 ${streak > 0 ? 'scale-110' : ''}`}>
+             <div className={`p-1 rounded-full ${streak > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'}`}>
+                 <Flame className={`w-3.5 h-3.5 ${streak > 0 ? 'animate-pulse' : ''}`} fill={streak > 0 ? "currentColor" : "none"} />
+             </div>
+             <span className={`text-sm ${streak > 0 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`}>{streak}</span>
+          </div>
+      </div>
+
+      {/* Mastery Bar */}
+      <div className="mb-6 px-1">
+          <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-blue-500 rounded-full transition-all duration-700"
                   style={{ width: `${masteryPercentage}%` }}
                 />
             </div>
-         </div>
-         
-         <div className={`flex items-center gap-1.5 font-bold transition-transform duration-300 ${streak > 0 ? 'scale-110' : ''}`}>
-            <div className={`p-1.5 rounded-full ${streak > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'}`}>
-                <Flame className={`w-4 h-4 ${streak > 0 ? 'animate-pulse' : ''}`} fill={streak > 0 ? "currentColor" : "none"} />
-            </div>
-            <span className={`text-lg ${streak > 0 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`}>{streak}</span>
-         </div>
       </div>
 
       {/* Question Card */}
@@ -138,7 +160,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
       </div>
 
       {/* Options */}
-      <div className="flex-1 overflow-y-auto pb-32 space-y-3">
+      <div className="flex-1 overflow-y-auto pb-32 space-y-3 px-1">
         {question.type === QuestionType.JUDGE ? (
           <div className="grid grid-cols-2 gap-3 mt-2">
             {[true, false].map((opt, idx) => (
@@ -163,11 +185,11 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
               key={idx}
               onClick={() => handleSelect(opt)}
               disabled={hasAnswered}
-              className={`w-full p-4 rounded-xl text-left flex items-start gap-3 group relative overflow-hidden ${getOptionStyle(opt)}`}
+              className={`w-full p-4 rounded-xl text-left flex items-start gap-3 group ${getOptionStyle(opt)}`}
             >
-              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 mt-0.5 border ${
+              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 mt-0.5 border transition-colors ${
                   hasAnswered 
-                    ? (opt === question.correctAnswer ? 'border-white text-white' : 'border-current opacity-60')
+                    ? (opt === question.correctAnswer ? 'border-white text-white' : (opt === selectedOption ? 'border-white text-white' : 'border-current opacity-60'))
                     : 'border-slate-300 dark:border-slate-600 text-slate-400 group-hover:border-blue-400 group-hover:text-blue-500'
               }`}>
                   {String.fromCharCode(65+idx)}
@@ -188,7 +210,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-4">
                {/* Feedback Header */}
                <div className="flex items-center justify-between mb-3">
-                   <div className={`flex items-center gap-2 font-black text-lg ${selectedOption === question.correctAnswer ? 'text-green-500' : 'text-red-500'}`}>
+                   <div className={`flex items-center gap-2 font-black text-lg ${selectedOption === question.correctAnswer ? 'text-green-500' : 'text-slate-500'}`}>
                         {selectedOption === question.correctAnswer ? (
                             <>
                                 <CheckCircle2 className="w-6 h-6" />
@@ -196,7 +218,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
                             </>
                         ) : (
                             <>
-                                <AlertOctagon className="w-6 h-6" />
+                                <AlertOctagon className="w-6 h-6 text-slate-500" />
                                 <span>回答错误</span>
                             </>
                         )}
@@ -215,7 +237,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, streak, masteryPer
 
                {/* Mnemonic Area */}
                {showMnemonic && question.mnemonic && (
-                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3">
+                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3 border border-amber-100 dark:border-amber-800/30">
                        <BrainCircuit className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
                        <div>
                            <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">巧记 Mnemonic</div>

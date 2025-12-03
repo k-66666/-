@@ -83,8 +83,14 @@ const App: React.FC = () => {
     setCurrentQuestion(next);
   };
 
+  // Stats Calculation
   const masteredCount = Object.values(progress.questionStats).filter(s => s.attempts.length > 0 && s.attempts[s.attempts.length - 1] === true).length;
   const masteryPercentage = questions.length > 0 ? Math.round((masteredCount / questions.length) * 100) : 0;
+  
+  // New Stats for QuizCard
+  const distinctAnsweredCount = Object.keys(progress.questionStats).length;
+  const totalQuestionsCount = questions.length;
+  const currentMistakeCount = mistakeQuestions.length;
 
   if (loading) {
     return <div className="h-screen flex items-center justify-center text-blue-600 font-bold dark:bg-slate-950 dark:text-blue-400">数据加载中...</div>;
@@ -105,7 +111,7 @@ const App: React.FC = () => {
                     <div className="bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-center justify-between">
                          <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-bold text-sm">
                             <AlertTriangle className="w-4 h-4" />
-                            <span>错题本 ({mistakeQuestions.length})</span>
+                            <span>错题本 ({currentMistakeCount})</span>
                          </div>
                          <span className="text-xs text-orange-600 dark:text-orange-500">做对即移出</span>
                     </div>
@@ -117,6 +123,9 @@ const App: React.FC = () => {
               question={currentQuestion}
               streak={progress.streak}
               masteryPercentage={masteryPercentage}
+              answeredCount={distinctAnsweredCount}
+              totalCount={totalQuestionsCount}
+              mistakeCount={currentMistakeCount}
               onAnswer={handleAnswer} 
               onNext={handleNext}
               isMistakeMode={isMistakeMode}
