@@ -14,7 +14,7 @@ export interface Question {
 }
 
 export interface QuestionStat {
-  attempts: boolean[]; // List of true/false for every attempt: [false, false, true]
+  attempts: boolean[]; // List of true/false for every attempt
   lastAttemptAt: number; // Timestamp
 }
 
@@ -22,10 +22,12 @@ export interface UserProgress {
   totalAnswered: number; // Total attempts made
   streak: number; // Current streak of correct answers
   questionStats: Record<string, QuestionStat>;
+  pinnedMistakes: string[]; // IDs of questions explicitly kept in mistake bank
 }
 
 export const INITIAL_PROGRESS: UserProgress = {
   totalAnswered: 0,
   streak: 0,
-  questionStats: {}
+  questionStats: {},
+  pinnedMistakes: []
 };

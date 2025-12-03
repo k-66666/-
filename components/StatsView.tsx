@@ -1,18 +1,15 @@
 import React from 'react';
-import { UserProgress } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Trophy, Target, AlertCircle, Zap } from 'lucide-react';
+import { UserProgress, Question, QuestionType } from '../types';
+import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface StatsViewProps {
   progress: UserProgress;
   totalQuestions: number;
+  questions: Question[]; // Need questions to identify types
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions }) => {
-  const rawAccuracy = progress.totalAnswered > 0 
-    ? Math.round((Object.values(progress.questionStats).reduce((acc, stat) => acc + stat.attempts.filter(a=>a).length, 0) / progress.totalAnswered) * 100) 
-    : 0;
-  
+export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, questions }) => {
   const attemptedQuestions = Object.values(progress.questionStats);
   const firstTryCorrectCount = attemptedQuestions.filter(stat => stat.attempts.length > 0 && stat.attempts[0] === true).length;
   const firstTryAccuracy = attemptedQuestions.length > 0
@@ -22,12 +19,35 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions }
   const distinctAnswered = Object.keys(progress.questionStats).length;
   const coverage = Math.round((distinctAnswered / totalQuestions) * 100);
 
-  const data = [
-    { name: '一次做对', value: firstTryCorrectCount },
-    { name: '需要复习', value: distinctAnswered - firstTryCorrectCount },
+  // Type Analysis
+  const getAccuracyByType = (type: QuestionType) => {
+    const typeQs = questions.filter(q => q.type === type);
+    const typeStats = typeQs.map(q => progress.questionStats[q.id]).filter(s => s);
+    if (typeStats.length === 0) return 0;
+    const correct = typeStats.reduce((acc, s) => acc + s.attempts.filter(a => a).length, 0);
+    const total = typeStats.reduce((acc, s) => acc + s.attempts.length, 0);
+    return total === 0 ? 0 : Math.round((correct / total) * 100);
+  };
+
+  const choiceAccuracy = getAccuracyByType(QuestionType.CHOICE);
+  const judgeAccuracy = getAccuracyByType(QuestionType.JUDGE);
+
+  const barData = [
+    { name: '选择题', accuracy: choiceAccuracy },
+    { name: '判断题', accuracy: judgeAccuracy },
   ];
 
-  const COLORS = ['#3b82f6', '#cbd5e1']; // Blue & Slate
+  // Hardest Questions (Top 5 mistakes)
+  const hardestQuestions = Object.keys(progress.questionStats)
+    .map(id => {
+        const q = questions.find(q => q.id === id);
+        const stat = progress.questionStats[id];
+        const failures = stat.attempts.filter(a => !a).length;
+        return { q, failures };
+    })
+    .filter(item => item.q && item.failures > 0)
+    .sort((a, b) => b.failures - a.failures)
+    .slice(0, 5);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-20">
@@ -54,54 +74,52 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions }
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Type Analysis Bar Chart */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-wider">学习质量分析</h3>
-        <div className="h-48 w-full">
-            {distinctAnswered > 0 ? (
-                 <ResponsiveContainer width="100%" height="100%">
-                 <PieChart>
-                   <Pie
-                     data={data}
-                     cx="50%"
-                     cy="50%"
-                     innerRadius={50}
-                     outerRadius={70}
-                     paddingAngle={5}
-                     dataKey="value"
-                     stroke="none"
-                   >
-                     {data.map((entry, index) => (
-                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                     ))}
-                   </Pie>
-                   <Tooltip 
-                     contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                     itemStyle={{ color: '#fff' }}
-                   />
-                   <Legend verticalAlign="bottom" height={36} iconType="circle"/>
-                 </PieChart>
-               </ResponsiveContainer>
-            ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-300 dark:text-slate-600">
-                    <AlertCircle className="w-10 h-10 mb-2 opacity-50" />
-                    <p className="font-medium text-xs">暂无数据，快去刷题吧！</p>
-                </div>
-            )}
+        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-wider flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            题型正确率对比
+        </h3>
+        <div className="h-40 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} layout="vertical" margin={{ left: 0, right: 30 }}>
+                    <XAxis type="number" domain={[0, 100]} hide />
+                    <YAxis dataKey="name" type="category" width={50} tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: 8, border: 'none', background: '#1e293b', color: '#fff' }} />
+                    <Bar dataKey="accuracy" radius={[0, 4, 4, 0]} barSize={20}>
+                        <Cell fill="#3b82f6" />
+                        <Cell fill="#a855f7" />
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Insight Card */}
-      <div className={`rounded-2xl p-5 border shadow-sm ${firstTryAccuracy < 60 ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800' : 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'}`}>
-        <h3 className={`text-xs font-bold mb-2 uppercase tracking-wider flex items-center gap-2 ${firstTryAccuracy < 60 ? 'text-orange-700 dark:text-orange-400' : 'text-blue-700 dark:text-blue-400'}`}>
-            <Target className="w-4 h-4" />
-            {firstTryAccuracy < 60 ? "基础薄弱" : "状态极佳"}
-        </h3>
-        <p className={`text-sm leading-relaxed font-medium ${firstTryAccuracy < 60 ? 'text-orange-800 dark:text-orange-300' : 'text-blue-800 dark:text-blue-300'}`}>
-            {firstTryAccuracy < 60 
-                ? "建议切换到「错题」栏目重点复习。多看题目下方的巧记，不要死记硬背。" 
-                : "你的第一直觉非常准！继续保持，尝试挑战更多新题，巩固记忆。"}
-        </p>
+      {/* Hall of Shame (Hardest Questions) */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-orange-500" />
+            高频错题榜 (Top 5)
+          </h3>
+          <div className="space-y-3">
+              {hardestQuestions.length > 0 ? hardestQuestions.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50">
+                      <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                              {item.q?.content}
+                          </p>
+                      </div>
+                      <div className="text-xs font-bold text-orange-500 shrink-0">
+                          错 {item.failures} 次
+                      </div>
+                  </div>
+              )) : (
+                  <p className="text-xs text-slate-400 text-center py-4">暂无高频错题，继续保持！</p>
+              )}
+          </div>
       </div>
 
     </div>

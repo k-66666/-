@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Question, UserProgress, INITIAL_PROGRESS } from '../types';
 import { SEED_QUESTIONS } from '../data/seed';
 
-// Updated storage key to force fresh data load for new complex distractors
-const STORAGE_KEY_QUESTIONS = 'dm_questions_v6';
-const STORAGE_KEY_PROGRESS = 'dm_progress_v6';
+// Updated storage key to v7 for new pinning feature
+const STORAGE_KEY_QUESTIONS = 'dm_questions_v7';
+const STORAGE_KEY_PROGRESS = 'dm_progress_v7';
 
 export const useQuestionBank = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -24,7 +24,10 @@ export const useQuestionBank = () => {
     }
 
     if (storedProgress) {
-      setProgress(JSON.parse(storedProgress));
+      const parsed = JSON.parse(storedProgress);
+      // Ensure pinnedMistakes exists for migration
+      if (!parsed.pinnedMistakes) parsed.pinnedMistakes = [];
+      setProgress(parsed);
     }
 
     setLoading(false);
@@ -60,10 +63,18 @@ export const useQuestionBank = () => {
       };
 
       const newStreak = isCorrect ? prev.streak + 1 : 0;
+      
+      // Auto-remove from pinned if correct (default behavior, unless toggled back via togglePin)
+      // Actually, standard behavior: if you get it right, we don't automatically unpin. 
+      // Pinning is manual. "Mistake" status is automatic.
+      // But for the "Mistake Mode" logic: a question is a mistake if (LastAttempt=False OR Pinned=True).
+      // So if I answer correct, LastAttempt=True. If it was NOT pinned, it drops out of mistakes.
+      // If it WAS pinned, it stays in mistakes.
 
       return {
-        totalAnswered: prev.totalAnswered + 1,
+        ...prev,
         streak: newStreak,
+        totalAnswered: prev.totalAnswered + 1,
         questionStats: {
           ...prev.questionStats,
           [questionId]: newStat
@@ -72,32 +83,53 @@ export const useQuestionBank = () => {
     });
   };
 
+  const togglePin = (questionId: string) => {
+    setProgress(prev => {
+      const currentPinned = prev.pinnedMistakes || [];
+      const isPinned = currentPinned.includes(questionId);
+      
+      let newPinned;
+      if (isPinned) {
+        newPinned = currentPinned.filter(id => id !== questionId);
+      } else {
+        newPinned = [...currentPinned, questionId];
+      }
+
+      return {
+        ...prev,
+        pinnedMistakes: newPinned
+      };
+    });
+  };
+
   const resetProgress = () => {
     setProgress(INITIAL_PROGRESS);
   };
 
-  // Helper: Get questions that have been attempted and have WRONG answers in their history
-  // or the last attempt was wrong
   const getMistakes = () => {
     return questions.filter(q => {
-      const stat = progress.questionStats[q.id];
-      if (!stat || stat.attempts.length === 0) return false;
-      // If last attempt was wrong, it's definitely a mistake to review
-      if (stat.attempts[stat.attempts.length - 1] === false) return true;
-      // If it has ever been wrong, include it (optional strict mode)
-      return stat.attempts.includes(false);
+      // Is Pinned?
+      if (progress.pinnedMistakes?.includes(q.id)) return true;
+
+      const stats = progress.questionStats[q.id];
+      // Has stats and last attempt was WRONG
+      if (stats && stats.attempts.length > 0) {
+        return !stats.attempts[stats.attempts.length - 1];
+      }
+      return false;
     });
   };
 
   return {
     questions,
     progress,
+    loading,
     addQuestion,
     updateQuestion,
     deleteQuestion,
     recordAttempt,
+    togglePin,
     resetProgress,
-    getMistakes,
-    loading
+    getMistakes
   };
 };

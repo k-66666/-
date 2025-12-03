@@ -8,11 +8,14 @@ import { Question } from './types';
 import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const App: React.FC = () => {
-  const { questions, progress, addQuestion, updateQuestion, deleteQuestion, recordAttempt, resetProgress, getMistakes, loading } = useQuestionBank();
+  const { questions, progress, addQuestion, updateQuestion, deleteQuestion, recordAttempt, togglePin, resetProgress, getMistakes, loading } = useQuestionBank();
   const [activeTab, setActiveTab] = useState<'quiz' | 'mistakes' | 'stats' | 'manage'>('quiz');
   
   // Theme Management
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Key to force re-render of QuizCard (useful for "Retry" functionality)
+  const [quizKey, setQuizKey] = useState(0);
 
   useEffect(() => {
     // Check system preference on load
@@ -66,11 +69,19 @@ const App: React.FC = () => {
 
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
+  // Initial load
   React.useEffect(() => {
-    if (!loading && questions.length > 0) {
+    if (!loading && questions.length > 0 && !currentQuestion) {
         setCurrentQuestion(getNextQuestion());
     }
-  }, [loading, questions.length, activeTab]); // Re-roll when switching tabs
+  }, [loading, questions.length, activeTab]); 
+
+  // Watch for mistake mode clearing
+  React.useEffect(() => {
+    if (isMistakeMode && mistakeQuestions.length === 0) {
+      setCurrentQuestion(null);
+    }
+  }, [mistakeQuestions.length, isMistakeMode]);
 
   const handleAnswer = (isCorrect: boolean) => {
     if (currentQuestion) {
@@ -81,7 +92,16 @@ const App: React.FC = () => {
   const handleNext = () => {
     const next = getNextQuestion();
     setCurrentQuestion(next);
+    setQuizKey(k => k + 1); // Ensure fresh state for next question
   };
+
+  const handleRetry = () => {
+    setQuizKey(k => k + 1); // Force re-render of current question
+  };
+
+  const handleTogglePin = (id: string) => {
+    togglePin(id);
+  }
 
   // Stats Calculation
   const masteredCount = Object.values(progress.questionStats).filter(s => s.attempts.length > 0 && s.attempts[s.attempts.length - 1] === true).length;
@@ -99,7 +119,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       activeTab={activeTab} 
-      onTabChange={setActiveTab}
+      onTabChange={(tab) => { setActiveTab(tab); setQuizKey(k => k + 1); setCurrentQuestion(null); }}
       theme={theme}
       toggleTheme={toggleTheme}
     >
@@ -120,14 +140,18 @@ const App: React.FC = () => {
 
           {currentQuestion ? (
             <QuizCard 
+              key={quizKey}
               question={currentQuestion}
               streak={progress.streak}
               masteryPercentage={masteryPercentage}
               answeredCount={distinctAnsweredCount}
               totalCount={totalQuestionsCount}
               mistakeCount={currentMistakeCount}
+              isPinned={progress.pinnedMistakes?.includes(currentQuestion.id) || false}
               onAnswer={handleAnswer} 
               onNext={handleNext}
+              onRetry={handleRetry}
+              onTogglePin={() => handleTogglePin(currentQuestion.id)}
               isMistakeMode={isMistakeMode}
             />
           ) : (
@@ -161,7 +185,7 @@ const App: React.FC = () => {
 
       {activeTab === 'stats' && (
         <div className="h-full flex flex-col">
-            <StatsView progress={progress} totalQuestions={questions.length} />
+            <StatsView progress={progress} totalQuestions={questions.length} questions={questions} />
             <div className="mt-8 flex justify-center">
                 <button 
                     onClick={() => { if(confirm('确定要重置所有学习进度吗？这将清空所有答题记录。')) resetProgress(); }}
