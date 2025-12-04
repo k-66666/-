@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronUp, Minus } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronUp, ChevronDown, Minimize2, Maximize2 } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
@@ -40,11 +40,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   const [flashType, setFlashType] = useState<'none' | 'green' | 'red'>('none');
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   
-  // Drag to dismiss state
+  // Explicit Minimize State (No Drag)
   const [isMinimized, setIsMinimized] = useState(false);
-  const [dragY, setDragY] = useState(0);
-  const startY = useRef<number>(0);
-  const isDragging = useRef<boolean>(false);
 
   useEffect(() => {
     // Reset state for new question
@@ -56,13 +53,11 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     setFlashType('none');
     setIsCorrectAnswer(false);
     setIsMinimized(false);
-    setDragY(0);
   }, [question]);
 
   const setsAreEqual = (a: any[], b: any[]) => {
       if (!a || !b) return false;
       if (a.length !== b.length) return false;
-      // Sort both arrays to ensure order doesn't matter for comparison
       const sortedA = [...a].sort();
       const sortedB = [...b].sort();
       return sortedA.every((val, index) => val === sortedB[index]);
@@ -109,29 +104,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       }
   };
 
-  // Drag Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-      startY.current = e.touches[0].clientY;
-      isDragging.current = true;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-      if (!isDragging.current) return;
-      const currentY = e.touches[0].clientY;
-      const delta = currentY - startY.current;
-      if (delta > 0) { // Only allow dragging down
-          setDragY(delta);
-      }
-  };
-
-  const handleTouchEnd = () => {
-      isDragging.current = false;
-      if (dragY > 100) {
-          setIsMinimized(true);
-      }
-      setDragY(0);
-  };
-
   const getOptionStyle = (option: string | boolean, index?: number) => {
     const base = "transition-all duration-300 border-2 font-medium relative overflow-hidden";
     
@@ -146,21 +118,48 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             if (selected) return `${base} bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/40 dark:border-blue-400 dark:text-blue-300`;
             return `${base} bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-300`;
         }
+        
+        // Post-answer logic
         if (isCorrectOption) {
-            if (selected) return `${base} bg-green-500 border-green-500 text-white shadow-xl scale-[1.02] z-10`;
-            return `${base} border-green-500 bg-white dark:bg-slate-900 text-green-600 dark:text-green-400 border-2 border-dashed`;
+            // Correct option gets prominent green style
+            return `${base} bg-white dark:bg-slate-900 border-green-500 text-green-600 dark:text-green-400 border-2 shadow-lg scale-[1.02] z-10`;
         } else {
-            if (selected) return `${base} bg-slate-500 border-slate-500 text-white line-through opacity-90 animate-shake`;
-            return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-30 grayscale cursor-not-allowed scale-95`;
+            if (selected) {
+                // Wrong selection gets grayed out strikethrough
+                return `${base} bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-400 line-through opacity-80`;
+            }
+            // Unselected irrelevant options
+            return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-40 grayscale`;
         }
     }
     
-    // Judgment logic remains similar
+    // Judgment logic
     const selectedJudge = selectedOptions === option;
     if (!hasAnswered) return `${base} bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-400`;
-    if (option === question.correctAnswer) return `${base} bg-green-500 border-green-500 text-white shadow-xl scale-[1.03] z-10 opacity-100`;
-    if (selectedJudge && option !== question.correctAnswer) return `${base} bg-slate-500 border-slate-500 text-white line-through opacity-90 animate-shake`;
-    return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-30 grayscale cursor-not-allowed scale-95`;
+    
+    if (option === question.correctAnswer) return `${base} bg-white dark:bg-slate-900 border-green-500 text-green-600 dark:text-green-400 border-2 shadow-lg scale-[1.02] z-10`;
+    
+    if (selectedJudge && option !== question.correctAnswer) {
+        return `${base} bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-400 line-through opacity-80`;
+    }
+    return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-40 grayscale`;
+  };
+
+  const getCorrectAnswerText = () => {
+      if (question.type === QuestionType.JUDGE) {
+          return question.correctAnswer ? '正确 (√)' : '错误 (×)';
+      }
+      
+      const correctLetters = question.correctAnswer as string[];
+      // If we have options, verify we can map them
+      if (question.options) {
+          return correctLetters.map(letter => {
+              const idx = letter.charCodeAt(0) - 65;
+              const text = question.options![idx];
+              return `${letter}. ${text}`;
+          });
+      }
+      return [correctLetters.join('、')];
   };
 
   const Confetti = () => (
@@ -238,12 +237,13 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             {question.options?.map((opt, idx) => {
                 const letter = String.fromCharCode(65 + idx);
                 const isSelected = ((selectedOptions as string[]) || []).includes(letter);
-                const isCorrect = (question.correctAnswer as string[]).includes(letter);
+                const correctAnswers = (question.correctAnswer as string[]) || [];
+                const isCorrectOption = correctAnswers.includes(letter);
                 
                 return (
                 <button key={idx} onClick={() => handleToggleOption(idx)} disabled={hasAnswered} className={`w-full p-4 rounded-xl text-left flex items-start gap-3 group ${getOptionStyle(opt, idx)}`}>
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 mt-0.5 border transition-colors ${hasAnswered ? (isCorrect ? 'border-white text-white' : 'border-current opacity-60') : (isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-300 dark:border-slate-600 text-slate-400 group-hover:border-blue-400')}`}>
-                    {hasAnswered && isCorrect ? <CheckCircle2 className="w-6 h-6" /> : (isSelected ? <CheckSquare className="w-4 h-4"/> : letter)}
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 mt-0.5 border transition-colors ${hasAnswered ? (isCorrectOption ? 'border-green-500 text-green-600' : 'border-slate-300 text-slate-300') : (isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-300 dark:border-slate-600 text-slate-400 group-hover:border-blue-400')}`}>
+                    {hasAnswered && isCorrectOption ? <CheckCircle2 className="w-6 h-6" /> : (isSelected && !hasAnswered ? <CheckSquare className="w-4 h-4"/> : letter)}
                 </div>
                 <span className="flex-1 leading-relaxed">{opt}</span>
                 </button>
@@ -263,12 +263,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             onClick={() => setIsMinimized(false)}
             className="fixed bottom-[72px] left-0 right-0 max-w-md mx-auto px-4 z-30 animate-in slide-in-from-bottom-10"
           >
-              <div className="bg-slate-900 text-white rounded-xl p-3 flex items-center justify-between shadow-xl cursor-pointer">
-                  <div className="flex items-center gap-2">
+              <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center justify-between shadow-xl cursor-pointer hover:bg-slate-800 transition-colors">
+                  <div className="flex items-center gap-3">
                       <ChevronUp className="w-5 h-5 animate-bounce" />
-                      <span className="font-bold text-sm">查看解析 & 答案</span>
+                      <span className="font-bold text-sm">展开解析 & 答案</span>
                   </div>
-                  <div className={`text-xs font-bold px-2 py-1 rounded ${isCorrectAnswer ? 'bg-green-500' : 'bg-red-500'}`}>
+                  <div className={`text-xs font-bold px-2.5 py-1 rounded-md ${isCorrectAnswer ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                       {isCorrectAnswer ? '回答正确' : '回答错误'}
                   </div>
               </div>
@@ -277,57 +277,61 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
       {/* Full Feedback Panel */}
       {hasAnswered && !isMinimized && (
-        <div 
-            className="fixed bottom-[72px] left-0 right-0 p-4 max-w-md mx-auto z-30 animate-in slide-in-from-bottom-20 duration-300"
-            style={{ transform: `translateY(${dragY}px)` }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-        >
-           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-4 max-h-[65vh] overflow-y-auto relative transition-transform">
-               {/* Drag Handle */}
-               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mb-2"></div>
+        <div className="fixed bottom-[72px] left-0 right-0 p-4 max-w-md mx-auto z-30 animate-in slide-in-from-bottom-20 duration-300">
+           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-5 max-h-[70vh] overflow-y-auto relative">
                
-               <div className="flex items-center justify-between mb-3 mt-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-                   <div className={`flex items-center gap-2 font-black text-lg ${isCorrectAnswer ? 'text-green-500' : 'text-slate-500'}`}>
-                        {isCorrectAnswer ? <><CheckCircle2 className="w-6 h-6" /><span>回答正确!</span></> : <><AlertOctagon className="w-6 h-6 text-slate-500" /><span>回答错误</span></>}
+               <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+                   <div className={`flex items-center gap-2 font-black text-xl ${isCorrectAnswer ? 'text-green-500' : 'text-slate-500'}`}>
+                        {isCorrectAnswer ? <><CheckCircle2 className="w-7 h-7" /><span>回答正确!</span></> : <><AlertOctagon className="w-7 h-7 text-slate-500" /><span>回答错误</span></>}
                    </div>
-                   {isMistakeMode && (
-                        <button onClick={onTogglePin} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${isPinned ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
-                            {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
-                            {isPinned ? '已保留' : '不保留'}
+                   <div className="flex gap-2">
+                        {isMistakeMode && (
+                                <button onClick={onTogglePin} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${isPinned ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
+                                    {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
+                                    {isPinned ? '已保留' : '不保留'}
+                                </button>
+                        )}
+                        <button onClick={() => setIsMinimized(true)} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors">
+                            <ChevronDown className="w-5 h-5" />
                         </button>
-                   )}
+                   </div>
                </div>
 
-               <div className="mb-4">
-                   <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">正确答案</span>
+               <div className="mb-5 p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-800/30">
+                   <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        <span className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest">正确答案</span>
                    </div>
-                   <div className="text-lg font-black text-green-600 dark:text-green-400 pl-5">
-                       {question.type === QuestionType.JUDGE 
-                           ? (question.correctAnswer ? '正确 (√)' : '错误 (×)') 
-                           : (question.correctAnswer as string[]).join('、')
-                        }
+                   <div className="space-y-1">
+                        {question.type === QuestionType.JUDGE ? (
+                            <div className="text-xl font-black text-green-700 dark:text-green-300">
+                                {question.correctAnswer ? '正确 (√)' : '错误 (×)'}
+                            </div>
+                        ) : (
+                            (getCorrectAnswerText() as string[]).map((ans, i) => (
+                                <div key={i} className="text-sm font-bold text-green-700 dark:text-green-300 leading-snug">
+                                    {ans}
+                                </div>
+                            ))
+                        )}
                    </div>
                </div>
 
                {question.analysis && (
-                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 mb-3 flex gap-3 border border-blue-100 dark:border-blue-800/30">
+                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-3 flex gap-3 border border-blue-100 dark:border-blue-800/30">
                        <Search className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
                        <div>
-                           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">深度辨析 Analysis</div>
+                           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">深度辨析 Analysis</div>
                            <div className="text-sm font-medium text-blue-900 dark:text-blue-100 leading-relaxed">{question.analysis}</div>
                        </div>
                    </div>
                )}
 
                {question.mnemonic && (
-                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3 border border-amber-100 dark:border-amber-800/30">
+                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 mb-5 flex gap-3 border border-amber-100 dark:border-amber-800/30">
                        <BrainCircuit className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
                        <div>
-                           <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">巧记 Mnemonic</div>
+                           <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">巧记 Mnemonic</div>
                            <div className="text-sm font-bold text-amber-900 dark:text-amber-100">{question.mnemonic}</div>
                        </div>
                    </div>
@@ -335,11 +339,11 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
                <div className="flex gap-3">
                     {showRetry ? (
-                        <button onClick={onRetry} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <button onClick={onRetry} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2">
                             <RotateCcw className="w-5 h-5" /> <span>重试 (最后一道)</span>
                         </button>
                     ) : (
-                        <button onClick={onNext} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <button onClick={onNext} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2">
                             <span>下一题</span> <ArrowRight className="w-5 h-5" />
                         </button>
                     )}

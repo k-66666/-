@@ -79,46 +79,39 @@ export const SEED_QUESTIONS: Question[] = [
     tags: ['2022真题', '数学哲学']
   },
 
-  // --- 经典选择题 (Converted to Array format) ---
+  // --- 经典选择题 ---
   {
     id: 'choice_1',
     type: QuestionType.CHOICE,
     content: '自然辩证法最早理论体系来源于？',
-    options: [
-      '马克思《资本论》', 
-      '恩格斯《自然辩证法》', 
-      '黑格尔《小逻辑》', 
-      '达尔文《物种起源》'
-    ],
+    options: ['马克思《资本论》', '恩格斯《自然辩证法》', '黑格尔《小逻辑》', '达尔文《物种起源》'],
     correctAnswer: ['B'],
     mnemonic: '恩自 (恩格斯-自然辩证法)',
     tags: ['绪论']
   },
   {
+    id: 'choice_2',
+    type: QuestionType.CHOICE,
+    content: '数理方程中许多不同形态的物理运动规律可以用同一个方程来描述，这表明？',
+    options: ['数学规律与物理规律在质上的统一性', '世界的物质统一性', '物质形态的互相转化性', '这些物质及其运动规律的一定同一性'],
+    correctAnswer: ['D'],
+    mnemonic: '方程同=规律同',
+    tags: ['物理哲学']
+  },
+  {
     id: 'choice_3',
     type: QuestionType.CHOICE,
     content: '微分作为无穷小量，其哲学意义是？',
-    options: [
-      '一种理想化的纯粹假设技巧', 
-      '微分的零与非零的统一', 
-      '微分是自然界物质层次划分中代表不同层次质的转化的关节点', 
-      '不可知论的表现'
-    ],
+    options: ['一种理想化的纯粹假设技巧', '微分的零与非零的统一', '微分是自然界物质层次划分中代表不同层次质的转化的关节点', '不可知论的表现'],
     correctAnswer: ['B', 'C'],
     mnemonic: '零与非零统一，质变关节点',
-    analysis: '微分既趋近于零又不等于零，体现了辩证统一；同时标志着宏观量向微观量的质变过渡。',
     tags: ['数学哲学']
   },
   {
     id: 'choice_4',
     type: QuestionType.CHOICE,
     content: '相对论的创立表明？',
-    options: [
-      '时间空间与物质及其运动状态密不可分', 
-      '时空是绝对的容器', 
-      '物质运动不影响时空', 
-      '牛顿力学是绝对真理'
-    ],
+    options: ['时间空间与物质及其运动状态密不可分', '时空是绝对的容器', '物质运动不影响时空', '牛顿力学是绝对真理'],
     correctAnswer: ['A'],
     mnemonic: '相对论=时空物运一体',
     tags: ['物理哲学']
@@ -127,59 +120,127 @@ export const SEED_QUESTIONS: Question[] = [
     id: 'choice_5',
     type: QuestionType.CHOICE,
     content: '量子力学的创立表明？',
-    options: [
-      '微观粒子遵循经典因果律', 
-      '昭示了一种不同于牛顿力学性质的新的因果观和规律观', 
-      '微观世界不可认识', 
-      '否定了客观世界'
-    ],
+    options: ['微观粒子遵循经典因果律', '昭示了一种不同于牛顿力学性质的新的因果观和规律观', '微观世界不可认识', '否定了客观世界'],
     correctAnswer: ['B'],
     mnemonic: '量子=新因果 (统计规律)',
     tags: ['物理哲学']
   },
   {
+    id: 'choice_6',
+    type: QuestionType.CHOICE,
+    content: '科学划界的标准有？',
+    options: ['可观察性、可控制性', '可检验性、可重复性', '权威性、神秘性', '主观性、唯一性'],
+    correctAnswer: ['A', 'B'],
+    mnemonic: '4可：观、控、检、重',
+    tags: ['科学划界']
+  },
+  {
     id: 'choice_7',
     type: QuestionType.CHOICE,
     content: '非欧几何的创立表明？',
-    options: [
-      '欧式几何是错误的', 
-      '欧式几何描述的空间形式只是自然界多种空间形式的一种', 
-      '人类可以发展多种形式的几何学', 
-      '空间形式取决于人的主观构造'
-    ],
+    options: ['欧式几何是错误的', '欧式几何描述的空间形式只是自然界多种空间形式的一种', '人类可以发展多种形式的几何学', '空间形式取决于人的主观构造'],
     correctAnswer: ['B', 'C'],
     mnemonic: '欧几只是之一，空间多样',
-    analysis: '非欧几何证明了空间结构的多样性，欧氏几何只是其中一种特例（平直空间）。',
     tags: ['数学哲学']
+  },
+  {
+    id: 'choice_8',
+    type: QuestionType.CHOICE,
+    content: '量子力学讨论中的“月亮问题”的实质是？',
+    options: ['月亮在无人看时不存在', '微观客体的本来面目是否可知', '对离开主体的客观事物的认识是否可能', '唯心主义观点'],
+    correctAnswer: ['B', 'C'],
+    mnemonic: '月亮存在吗？=客观可知性',
+    tags: ['物理哲学']
   },
   {
     id: 'choice_9',
     type: QuestionType.CHOICE,
     content: '系统非加和性的实质是？',
-    options: [
-      '整体等于部分之和', 
-      '整体各部分存在制约、作用和选择', 
-      '整体的性质和功能不等于各部分性质和功能的简单叠加', 
-      '整体小于部分之和'
-    ],
+    options: ['整体等于部分之和', '整体各部分存在制约、作用和选择', '整体的性质和功能不等于各部分性质和功能的简单叠加', '整体小于部分之和'],
     correctAnswer: ['B', 'C'],
     mnemonic: '制约作用，1+1≠2',
-    analysis: '系统的整体涌现性来源于要素之间的非线性相互作用（制约、协同），导致整体功能溢出或内耗。',
     tags: ['系统论']
+  },
+  {
+    id: 'choice_10',
+    type: QuestionType.CHOICE,
+    content: '研究系统演化的“时间箭头”的实质是？',
+    options: ['时间是可逆的', '它代表真实的自然演化过程具有不可逆性', '它揭示了时间一维性的物理内容', '时间是循环的'],
+    correctAnswer: ['B', 'C'],
+    mnemonic: '时间箭头=不可逆+一维',
+    tags: ['演化论']
+  },
+  {
+    id: 'choice_11',
+    type: QuestionType.CHOICE,
+    content: '相对论的创立表明？(重复强调)',
+    options: ['时间空间与物质及其运动状态密不可分', '时空独立', '物质无关', '绝对时空'],
+    correctAnswer: ['A'],
+    mnemonic: '相对论=不可分',
+    tags: ['物理哲学']
   },
   {
     id: 'choice_12',
     type: QuestionType.CHOICE,
     content: '自然辩证法的学科性质是？',
-    options: [
-      '实证科学', 
-      '马克思主义哲学的一个组成部分', 
-      '连接马克思主义哲学与科学技术的中介和桥梁', 
-      '纯粹思辨哲学'
-    ],
+    options: ['实证科学', '马克思主义哲学的一个组成部分', '连接马克思主义哲学与科学技术的中介和桥梁', '纯粹思辨哲学'],
     correctAnswer: ['B', 'C'],
     mnemonic: '马哲组成，哲科桥梁',
     tags: ['绪论']
+  },
+  {
+    id: 'choice_13',
+    type: QuestionType.CHOICE,
+    content: '自然辩证法产生的部分学科基础是？',
+    options: ['达尔文进化论', '能量守恒定律', '细胞学说', '神创论'],
+    correctAnswer: ['A', 'B', 'C'],
+    mnemonic: '19世纪三大发现',
+    tags: ['绪论']
+  },
+  {
+    id: 'choice_14',
+    type: QuestionType.CHOICE,
+    content: '科学技术的一般性质是？',
+    options: ['无阶级性', '一般意义上的生产力', '具有阶级性', '完全中立'],
+    correctAnswer: ['A', 'B'],
+    mnemonic: '科技无阶级，是生产力',
+    tags: ['科技观']
+  },
+  {
+    id: 'choice_15',
+    type: QuestionType.CHOICE,
+    content: '可持续发展观是？',
+    options: ['为了解决人与自然的对立和矛盾', '一种价值观', '单纯的经济增长', '回归原始社会'],
+    correctAnswer: ['A', 'B'],
+    mnemonic: '解决矛盾，价值观',
+    tags: ['可持续发展']
+  },
+  {
+    id: 'choice_16',
+    type: QuestionType.CHOICE,
+    content: '结构型数学是？',
+    options: ['研究数学结构及其关系的科学', '研究结构量及其关系的科学', '简单的计算', '几何作图'],
+    correctAnswer: ['A', 'B'],
+    mnemonic: '结构+关系',
+    tags: ['数学哲学']
+  },
+  {
+    id: 'choice_17',
+    type: QuestionType.CHOICE,
+    content: '科学与非科学的区别是？',
+    options: ['前者可检验', '前者满足可重复性', '前者高深', '前者正确'],
+    correctAnswer: ['A', 'B'],
+    mnemonic: '可检验，可重复',
+    tags: ['科学划界']
+  },
+  {
+    id: 'choice_18',
+    type: QuestionType.CHOICE,
+    content: '系统的整体性原理是指？',
+    options: ['整体的性质和功能不等于部分和', '整体等于部分和', '整体小于部分和', '整体无关部分'],
+    correctAnswer: ['A'],
+    mnemonic: '整体≠部分和',
+    tags: ['系统论']
   },
 
   // --- 判断题 (带辨析) ---
@@ -265,6 +326,42 @@ export const SEED_QUESTIONS: Question[] = [
     tags: ['技术伦理']
   },
   {
+    id: 'judge_10',
+    type: QuestionType.JUDGE,
+    content: '在一个时代的技术中，往往存在一个主导技术。',
+    correctAnswer: true,
+    mnemonic: '蒸汽->电力->信息，主导明确',
+    analysis: '对。每个时代通常都有核心技术群，其中起决定性作用的称为主导技术。',
+    tags: ['技术发展']
+  },
+  {
+    id: 'judge_11',
+    type: QuestionType.JUDGE,
+    content: '宇宙的无限性既无法证实也无法证伪，因此是无意义的。',
+    correctAnswer: false,
+    mnemonic: '有意义，推动探索',
+    analysis: '错。虽然难以直接证实，但这一概念推动了宇宙学理论的发展和探索，具有重要的科学启发意义。',
+    tags: ['自然观']
+  },
+  {
+    id: 'judge_12',
+    type: QuestionType.JUDGE,
+    content: '“大爆炸宇宙学”证实了宇宙的有限性。',
+    correctAnswer: false,
+    mnemonic: '只是假说，未最终证实',
+    analysis: '错。大爆炸理论目前是主流假说，虽然有证据（微波背景辐射），但尚未完全“证实”宇宙的有限性/边界问题。',
+    tags: ['自然观']
+  },
+  {
+    id: 'judge_13',
+    type: QuestionType.JUDGE,
+    content: '公理化的方法是科学发现的方法。',
+    correctAnswer: false,
+    mnemonic: '公理化=整理/严密化，非发现',
+    analysis: '错。公理化主要用于理论的整理和严密化（后续阶段），而科学发现主要靠归纳、演绎、直觉等（前沿阶段）。',
+    tags: ['方法论']
+  },
+  {
     id: 'judge_14',
     type: QuestionType.JUDGE,
     content: '理想模型和理想实验对物质第一性原则提出了挑战。',
@@ -272,6 +369,33 @@ export const SEED_QUESTIONS: Question[] = [
     mnemonic: '不挑战，前提仍是物质第一性',
     analysis: '错。理想模型（如质点）是基于客观现实的科学抽象，其前提和基础依然是客观物质世界，并未否定物质第一性。',
     tags: ['方法论']
+  },
+  {
+    id: 'judge_15',
+    type: QuestionType.JUDGE,
+    content: '任何科学技术的成果，既有正价值，又有负价值。',
+    correctAnswer: true,
+    mnemonic: '双刃剑',
+    analysis: '对。科技应用具有两面性（如核能发电与核武器），取决于使用目的和后果。',
+    tags: ['科技伦理']
+  },
+  {
+    id: 'judge_16',
+    type: QuestionType.JUDGE,
+    content: '逆向思维的哲学依据是辩证法的对立统一规律。',
+    correctAnswer: true,
+    mnemonic: '逆向=对立面转化',
+    analysis: '对。逆向思维利用了矛盾双方在一定条件下相互转化的原理。',
+    tags: ['方法论']
+  },
+  {
+    id: 'judge_17',
+    type: QuestionType.JUDGE,
+    content: '托勒密的“地心说”和哥白尼的“日心说”各有自己的理论依据。',
+    correctAnswer: true,
+    mnemonic: '参考系不同，都有依据',
+    analysis: '对。在不同的参考系下观察，二者都有其观测数据支持，只是日心说更简洁、更能解释天体运行。',
+    tags: ['科学史']
   },
   {
     id: 'judge_18',
@@ -283,12 +407,30 @@ export const SEED_QUESTIONS: Question[] = [
     tags: ['方法论']
   },
   {
+    id: 'judge_19',
+    type: QuestionType.JUDGE,
+    content: '科学家不懂哲学也能搞科研，所以哲学无用。',
+    correctAnswer: false,
+    mnemonic: '哲学不仅有用，还能少走弯路',
+    analysis: '错。哲学提供世界观和方法论指导。科学家即便不自觉，也受哲学思想影响。自觉学习哲学能避免唯心主义陷阱，少走弯路。',
+    tags: ['绪论']
+  },
+  {
     id: 'judge_20',
     type: QuestionType.JUDGE,
     content: '自然界的客观性是指物质不灭性。',
     correctAnswer: false,
     mnemonic: '客观性范围更大 (包括关系客观)',
     analysis: '错。物质不灭只是客观性的一种表现。自然界的客观性还包括规律的客观性、关系的客观性等，范围更广。',
+    tags: ['自然观']
+  },
+  {
+    id: 'judge_21',
+    type: QuestionType.JUDGE,
+    content: '宇宙的无限性是指人类对宇宙的认识是无限的。',
+    correctAnswer: false,
+    mnemonic: '本体无限≠认识无限',
+    analysis: '错。宇宙无限性首先指客观存在的无限（时间/空间），认识的无限性是基于此的派生，不能混淆本体论和认识论。',
     tags: ['自然观']
   },
   {
@@ -310,6 +452,24 @@ export const SEED_QUESTIONS: Question[] = [
     tags: ['演化论']
   },
   {
+    id: 'judge_24',
+    type: QuestionType.JUDGE,
+    content: '“牧场悖论”的实质是个体利益与集体利益的矛盾。',
+    correctAnswer: true,
+    mnemonic: '公地悲剧：个体最大化≠集体最大化',
+    analysis: '对。每个人都想多养羊（个体理性），结果导致草场沙化（集体非理性），反映了个体与整体利益的冲突。',
+    tags: ['生态观']
+  },
+  {
+    id: 'judge_25',
+    type: QuestionType.JUDGE,
+    content: '解决人类和自然界的对立要靠实施科学发展观。',
+    correctAnswer: true,
+    mnemonic: '科学发展观=人与自然和谐',
+    analysis: '对。科学发展观强调全面协调可持续，是解决人与自然对立、实现和谐共生的根本途径。',
+    tags: ['科学发展观']
+  },
+  {
     id: 'judge_26',
     type: QuestionType.JUDGE,
     content: '《周易》是古代的预测学。',
@@ -317,6 +477,42 @@ export const SEED_QUESTIONS: Question[] = [
     mnemonic: '周易算卦≠科学预测',
     analysis: '错。《周易》虽然包含朴素辩证法，但其占卜预测缺乏科学的可检验性和逻辑因果，属于神秘主义，不是现代意义的科学预测学。',
     tags: ['伪科学']
+  },
+  {
+    id: 'judge_27',
+    type: QuestionType.JUDGE,
+    content: '中国古典哲学的阴阳分析是古代的辩证法。',
+    correctAnswer: true,
+    mnemonic: '阴阳=朴素辩证法',
+    analysis: '对。阴阳学说用对立统一的观点看世界，是中国古代朴素辩证法的典型代表。',
+    tags: ['科学史']
+  },
+  {
+    id: 'judge_28',
+    type: QuestionType.JUDGE,
+    content: '中医学靠的是经验看病，因此不是科学。',
+    correctAnswer: false,
+    mnemonic: '经验≠非科学，中医有理论体系',
+    analysis: '错。中医有完整的理论体系（阴阳五行、脏腑经络）和实证基础，虽然与西医范式不同，但不能简单定性为非科学。',
+    tags: ['医学哲学']
+  },
+  {
+    id: 'judge_29',
+    type: QuestionType.JUDGE,
+    content: '波普尔认为，哲学是不能检验真伪的，因此不是科学。',
+    correctAnswer: false,
+    mnemonic: '哲学可批判，虽不可证伪',
+    analysis: '错。波普尔认为哲学命题虽然不可证伪（非科学），但可以通过理性批判来检验其价值，并非无意义。',
+    tags: ['波普尔']
+  },
+  {
+    id: 'judge_30',
+    type: QuestionType.JUDGE,
+    content: '教学中知识和方法的关系就是“干粮”和“猎枪”的关系。',
+    correctAnswer: false,
+    mnemonic: '比喻很对，但题目判错可能是因为强调“互补”',
+    analysis: '（注：此题在不同语境下有争议，通常认为该比喻正确。但若判错，理由可能是知识和方法不仅是工具关系，更是内化素质的关系）。',
+    tags: ['教育哲学']
   },
   {
     id: 'judge_31',
