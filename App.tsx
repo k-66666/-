@@ -4,7 +4,7 @@ import { Layout } from './components/Layout';
 import { QuizCard } from './components/QuizCard';
 import { StatsView } from './components/StatsView';
 import { QuestionManager } from './components/QuestionManager';
-import { Question } from './types';
+import { Question, QuestionStat } from './types';
 import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -111,7 +111,7 @@ const App: React.FC = () => {
   };
 
   // Stats Calculation
-  const masteredCount = Object.values(progress.questionStats).filter(s => s.attempts.length > 0 && s.attempts[s.attempts.length - 1] === true).length;
+  const masteredCount = (Object.values(progress.questionStats) as QuestionStat[]).filter(s => s.attempts.length > 0 && s.attempts[s.attempts.length - 1] === true).length;
   const masteryPercentage = questions.length > 0 ? Math.round((masteredCount / questions.length) * 100) : 0;
   
   // New Stats for QuizCard

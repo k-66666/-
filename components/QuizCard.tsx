@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, Lightbulb, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronUp, Minus } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
@@ -31,63 +32,134 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     onTogglePin,
     isMistakeMode 
 }) => {
-  const [selectedOption, setSelectedOption] = useState<string | boolean | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<any[] | boolean | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showMnemonic, setShowMnemonic] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [flashType, setFlashType] = useState<'none' | 'green' | 'red'>('none');
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   
+  // Drag to dismiss state
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const startY = useRef<number>(0);
+  const isDragging = useRef<boolean>(false);
+
   useEffect(() => {
     // Reset state for new question
-    setSelectedOption(null);
+    setSelectedOptions(question.type === QuestionType.CHOICE ? [] : null);
     setHasAnswered(false);
     setShowMnemonic(false);
     setIsShaking(false);
     setShowConfetti(false);
     setFlashType('none');
+    setIsCorrectAnswer(false);
+    setIsMinimized(false);
+    setDragY(0);
   }, [question]);
 
-  const handleSelect = (option: string | boolean) => {
-    if (hasAnswered) return;
-    
-    setSelectedOption(option);
-    setHasAnswered(true);
-    
-    const isCorrect = option === question.correctAnswer;
-    onAnswer(isCorrect);
-    
-    if (isCorrect) {
-      setShowConfetti(true);
-      setFlashType('green');
-    } else {
-      setIsShaking(true);
-      setFlashType('red');
-      setTimeout(() => setIsShaking(false), 400); 
-      setShowMnemonic(true);
-    }
+  const setsAreEqual = (a: any[], b: any[]) => {
+      if (!a || !b) return false;
+      if (a.length !== b.length) return false;
+      // Sort both arrays to ensure order doesn't matter for comparison
+      const sortedA = [...a].sort();
+      const sortedB = [...b].sort();
+      return sortedA.every((val, index) => val === sortedB[index]);
   };
 
-  const getOptionStyle = (option: string | boolean) => {
-    // Linear / Flat Style Base
+  const handleToggleOption = (letterIndex: number) => {
+      if (hasAnswered) return;
+      const letter = String.fromCharCode(65 + letterIndex);
+      const current = (selectedOptions as string[]) || [];
+      if (current.includes(letter)) {
+          setSelectedOptions(current.filter(o => o !== letter));
+      } else {
+          setSelectedOptions([...current, letter]);
+      }
+  };
+
+  const submitChoiceAnswer = () => {
+      const correct = question.correctAnswer as string[];
+      const selected = (selectedOptions as string[]) || [];
+      const isCorrect = setsAreEqual(selected, correct);
+      processSubmission(isCorrect);
+  };
+
+  const handleJudgeSelect = (val: boolean) => {
+      if (hasAnswered) return;
+      setSelectedOptions(val);
+      const isCorrect = val === question.correctAnswer;
+      processSubmission(isCorrect);
+  };
+
+  const processSubmission = (isCorrect: boolean) => {
+      setHasAnswered(true);
+      setIsCorrectAnswer(isCorrect);
+      onAnswer(isCorrect);
+
+      if (isCorrect) {
+        setShowConfetti(true);
+        setFlashType('green');
+      } else {
+        setIsShaking(true);
+        setFlashType('red');
+        setTimeout(() => setIsShaking(false), 400); 
+        setShowMnemonic(true);
+      }
+  };
+
+  // Drag Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+      startY.current = e.touches[0].clientY;
+      isDragging.current = true;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+      if (!isDragging.current) return;
+      const currentY = e.touches[0].clientY;
+      const delta = currentY - startY.current;
+      if (delta > 0) { // Only allow dragging down
+          setDragY(delta);
+      }
+  };
+
+  const handleTouchEnd = () => {
+      isDragging.current = false;
+      if (dragY > 100) {
+          setIsMinimized(true);
+      }
+      setDragY(0);
+  };
+
+  const getOptionStyle = (option: string | boolean, index?: number) => {
     const base = "transition-all duration-300 border-2 font-medium relative overflow-hidden";
     
-    if (!hasAnswered) {
-      // Default State
-      return `${base} bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-[0.98]`;
+    if (question.type === QuestionType.CHOICE && typeof index === 'number') {
+        const letter = String.fromCharCode(65 + index);
+        const currentSelected = (selectedOptions as string[]) || [];
+        const selected = currentSelected.includes(letter);
+        const correctAnswers = (question.correctAnswer as string[]) || [];
+        const isCorrectOption = correctAnswers.includes(letter);
+
+        if (!hasAnswered) {
+            if (selected) return `${base} bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/40 dark:border-blue-400 dark:text-blue-300`;
+            return `${base} bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-300`;
+        }
+        if (isCorrectOption) {
+            if (selected) return `${base} bg-green-500 border-green-500 text-white shadow-xl scale-[1.02] z-10`;
+            return `${base} border-green-500 bg-white dark:bg-slate-900 text-green-600 dark:text-green-400 border-2 border-dashed`;
+        } else {
+            if (selected) return `${base} bg-slate-500 border-slate-500 text-white line-through opacity-90 animate-shake`;
+            return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-30 grayscale cursor-not-allowed scale-95`;
+        }
     }
     
-    if (option === question.correctAnswer) {
-      // Correct Answer (Always Green, Scaled Up)
-      return `${base} bg-green-500 border-green-500 text-white shadow-xl shadow-green-200/50 dark:shadow-none scale-[1.03] z-10 opacity-100`;
-    }
-    
-    if (option === selectedOption && option !== question.correctAnswer) {
-      // Wrong Selection (Gray + Strikethrough) - Updated based on feedback
-      return `${base} bg-slate-500 border-slate-500 text-white line-through opacity-90 animate-shake shadow-none`;
-    }
-    
-    // Unselected & Incorrect (Fade out significantly)
+    // Judgment logic remains similar
+    const selectedJudge = selectedOptions === option;
+    if (!hasAnswered) return `${base} bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-400`;
+    if (option === question.correctAnswer) return `${base} bg-green-500 border-green-500 text-white shadow-xl scale-[1.03] z-10 opacity-100`;
+    if (selectedJudge && option !== question.correctAnswer) return `${base} bg-slate-500 border-slate-500 text-white line-through opacity-90 animate-shake`;
     return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-30 grayscale cursor-not-allowed scale-95`;
   };
 
@@ -103,23 +175,16 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     </div>
   );
 
-  const isCorrectAnswer = selectedOption === question.correctAnswer;
-  
-  // Logic to determine if "Next" should be "Retry"
-  // If Mistake Mode, and Last Question (mistakeCount <= 1), and Wrong Answer -> Show Retry
-  const showRetry = isMistakeMode && mistakeCount <= 1 && !isCorrectAnswer;
+  const showRetry = isMistakeMode && mistakeCount <= 1 && !isCorrectAnswer && hasAnswered;
 
   return (
     <div className="flex flex-col h-full relative z-0">
-      {/* Screen Flash Overlay */}
       {flashType === 'green' && <div className="absolute inset-0 z-10 animate-flash-green pointer-events-none rounded-3xl" />}
       {flashType === 'red' && <div className="absolute inset-0 z-10 animate-flash-red pointer-events-none rounded-3xl" />}
-      
       {showConfetti && <Confetti />}
 
-      {/* Top Info Bar */}
+      {/* Top Info */}
       <div className="flex items-center justify-between gap-4 mb-4 px-1">
-          {/* Left: Progress Stats */}
           <div className="flex gap-4">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
                   <BookOpen className="w-3.5 h-3.5" />
@@ -130,8 +195,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                   <span>错题 {mistakeCount}</span>
               </div>
           </div>
-
-          {/* Right: Streak */}
           <div className={`flex items-center gap-1.5 font-bold transition-transform duration-300 ${streak > 0 ? 'scale-110' : ''}`}>
              <div className={`p-1 rounded-full ${streak > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'}`}>
                  <Flame className={`w-3.5 h-3.5 ${streak > 0 ? 'animate-pulse' : ''}`} fill={streak > 0 ? "currentColor" : "none"} />
@@ -140,125 +203,127 @@ export const QuizCard: React.FC<QuizCardProps> = ({
           </div>
       </div>
 
-      {/* Mastery Bar */}
       <div className="mb-6 px-1">
           <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 rounded-full transition-all duration-700"
-                  style={{ width: `${masteryPercentage}%` }}
-                />
+                <div className="h-full bg-blue-500 rounded-full transition-all duration-700" style={{ width: `${masteryPercentage}%` }} />
             </div>
       </div>
 
-      {/* Question Card */}
       <div className={`flex-shrink-0 mb-6 transition-all duration-300 ${isShaking ? 'animate-shake' : ''}`}>
         <div className="flex items-center justify-between mb-3">
              <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md ${question.type === QuestionType.JUDGE ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}`}>
-                    {question.type === QuestionType.JUDGE ? '判断题' : '选择题'}
+                    {question.type === QuestionType.JUDGE ? '判断题' : '不定项选择'}
                 </span>
-                {isMistakeMode && (
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 flex items-center gap-1">
-                        <RotateCcw className="w-3 h-3" />
-                        错题重练
-                    </span>
-                )}
-            </div>
-            
-            {/* Removed top pin button - moved to feedback panel */}
+             </div>
         </div>
         <h2 className="text-xl font-bold leading-relaxed text-slate-800 dark:text-slate-100">
           {question.content}
         </h2>
       </div>
 
-      {/* Options */}
-      <div className="flex-1 overflow-y-auto pb-48 space-y-3 px-1">
+      {/* Options Area */}
+      <div className="flex-1 overflow-y-auto pb-48 space-y-3 px-1 scroll-smooth">
         {question.type === QuestionType.JUDGE ? (
           <div className="grid grid-cols-2 gap-3 mt-2">
             {[true, false].map((opt, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSelect(opt)}
-                disabled={hasAnswered}
-                className={`p-6 rounded-xl flex flex-col items-center justify-center gap-2 ${getOptionStyle(opt)}`}
-              >
-                {hasAnswered && opt === question.correctAnswer ? (
-                    <CheckCircle2 className="w-8 h-8 mb-1" />
-                ) : hasAnswered && opt === selectedOption ? (
-                    <XCircle className="w-8 h-8 mb-1" />
-                ) : null}
+              <button key={idx} onClick={() => handleJudgeSelect(opt)} disabled={hasAnswered} className={`p-6 rounded-xl flex flex-col items-center justify-center gap-2 ${getOptionStyle(opt)}`}>
+                {hasAnswered && opt === question.correctAnswer ? <CheckCircle2 className="w-8 h-8 mb-1" /> : hasAnswered && (selectedOptions === opt) ? <XCircle className="w-8 h-8 mb-1" /> : null}
                 <span className="text-lg font-bold">{opt ? '正确' : '错误'}</span>
               </button>
             ))}
           </div>
         ) : (
-          question.options?.map((opt, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSelect(opt)}
-              disabled={hasAnswered}
-              className={`w-full p-4 rounded-xl text-left flex items-start gap-3 group ${getOptionStyle(opt)}`}
-            >
-              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 mt-0.5 border transition-colors ${
-                  hasAnswered 
-                    ? (opt === question.correctAnswer ? 'border-white text-white' : (opt === selectedOption ? 'border-white text-white' : 'border-current opacity-60'))
-                    : 'border-slate-300 dark:border-slate-600 text-slate-400 group-hover:border-blue-400 group-hover:text-blue-500'
-              }`}>
-                  {String.fromCharCode(65+idx)}
-              </div>
-              
-              <span className="flex-1 leading-relaxed">{opt}</span>
-
-              {hasAnswered && opt === question.correctAnswer && <CheckCircle2 className="w-5 h-5 shrink-0" />}
-              {hasAnswered && opt === selectedOption && opt !== question.correctAnswer && <XCircle className="w-5 h-5 shrink-0" />}
-            </button>
-          ))
+          <>
+            {question.options?.map((opt, idx) => {
+                const letter = String.fromCharCode(65 + idx);
+                const isSelected = ((selectedOptions as string[]) || []).includes(letter);
+                const isCorrect = (question.correctAnswer as string[]).includes(letter);
+                
+                return (
+                <button key={idx} onClick={() => handleToggleOption(idx)} disabled={hasAnswered} className={`w-full p-4 rounded-xl text-left flex items-start gap-3 group ${getOptionStyle(opt, idx)}`}>
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 mt-0.5 border transition-colors ${hasAnswered ? (isCorrect ? 'border-white text-white' : 'border-current opacity-60') : (isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-300 dark:border-slate-600 text-slate-400 group-hover:border-blue-400')}`}>
+                    {hasAnswered && isCorrect ? <CheckCircle2 className="w-6 h-6" /> : (isSelected ? <CheckSquare className="w-4 h-4"/> : letter)}
+                </div>
+                <span className="flex-1 leading-relaxed">{opt}</span>
+                </button>
+            )})}
+            {!hasAnswered && (
+                <button onClick={submitChoiceAnswer} disabled={!selectedOptions || (selectedOptions as string[]).length === 0} className="w-full mt-6 bg-slate-800 dark:bg-blue-600 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2">
+                    确认提交 <ArrowRight className="w-4 h-4" />
+                </button>
+            )}
+          </>
         )}
       </div>
 
-      {/* Feedback Panel (Fixed Bottom) */}
-      {hasAnswered && (
-        <div className="fixed bottom-[72px] left-0 right-0 p-4 max-w-md mx-auto z-30 animate-pop">
-           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-4">
-               {/* Feedback Header */}
-               <div className="flex items-center justify-between mb-3">
+      {/* Minimized Bar */}
+      {hasAnswered && isMinimized && (
+          <div 
+            onClick={() => setIsMinimized(false)}
+            className="fixed bottom-[72px] left-0 right-0 max-w-md mx-auto px-4 z-30 animate-in slide-in-from-bottom-10"
+          >
+              <div className="bg-slate-900 text-white rounded-xl p-3 flex items-center justify-between shadow-xl cursor-pointer">
+                  <div className="flex items-center gap-2">
+                      <ChevronUp className="w-5 h-5 animate-bounce" />
+                      <span className="font-bold text-sm">查看解析 & 答案</span>
+                  </div>
+                  <div className={`text-xs font-bold px-2 py-1 rounded ${isCorrectAnswer ? 'bg-green-500' : 'bg-red-500'}`}>
+                      {isCorrectAnswer ? '回答正确' : '回答错误'}
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Full Feedback Panel */}
+      {hasAnswered && !isMinimized && (
+        <div 
+            className="fixed bottom-[72px] left-0 right-0 p-4 max-w-md mx-auto z-30 animate-in slide-in-from-bottom-20 duration-300"
+            style={{ transform: `translateY(${dragY}px)` }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-4 max-h-[65vh] overflow-y-auto relative transition-transform">
+               {/* Drag Handle */}
+               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mb-2"></div>
+               
+               <div className="flex items-center justify-between mb-3 mt-4 border-b border-slate-100 dark:border-slate-800 pb-2">
                    <div className={`flex items-center gap-2 font-black text-lg ${isCorrectAnswer ? 'text-green-500' : 'text-slate-500'}`}>
-                        {isCorrectAnswer ? (
-                            <>
-                                <CheckCircle2 className="w-6 h-6" />
-                                <span>回答正确!</span>
-                            </>
-                        ) : (
-                            <>
-                                <AlertOctagon className="w-6 h-6 text-slate-500" />
-                                <span>回答错误</span>
-                            </>
-                        )}
+                        {isCorrectAnswer ? <><CheckCircle2 className="w-6 h-6" /><span>回答正确!</span></> : <><AlertOctagon className="w-6 h-6 text-slate-500" /><span>回答错误</span></>}
                    </div>
-                   
-                   {!isMistakeMode && !question.mnemonic && !isCorrectAnswer && (
-                       <div className="text-xs font-bold text-slate-400">已自动加入错题本</div>
-                   )}
-                   {isMistakeMode && isCorrectAnswer && !isPinned && (
-                       <div className="text-xs font-bold text-green-500 flex items-center gap-1">
-                           <CheckCircle2 className="w-3 h-3" />
-                           已移出错题本
-                       </div>
-                   )}
-                   {isMistakeMode && isPinned && (
-                       <div className="text-xs font-bold text-orange-500 flex items-center gap-1">
-                           <Pin className="w-3 h-3 fill-current" />
-                           已保留
-                       </div>
-                   )}
-                   {isMistakeMode && !isCorrectAnswer && (
-                        <div className="text-xs font-bold text-red-500">依然在错题本</div>
+                   {isMistakeMode && (
+                        <button onClick={onTogglePin} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${isPinned ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
+                            {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
+                            {isPinned ? '已保留' : '不保留'}
+                        </button>
                    )}
                </div>
 
-               {/* Mnemonic Area */}
-               {showMnemonic && question.mnemonic && (
+               <div className="mb-4">
+                   <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">正确答案</span>
+                   </div>
+                   <div className="text-lg font-black text-green-600 dark:text-green-400 pl-5">
+                       {question.type === QuestionType.JUDGE 
+                           ? (question.correctAnswer ? '正确 (√)' : '错误 (×)') 
+                           : (question.correctAnswer as string[]).join('、')
+                        }
+                   </div>
+               </div>
+
+               {question.analysis && (
+                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 mb-3 flex gap-3 border border-blue-100 dark:border-blue-800/30">
+                       <Search className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                       <div>
+                           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">深度辨析 Analysis</div>
+                           <div className="text-sm font-medium text-blue-900 dark:text-blue-100 leading-relaxed">{question.analysis}</div>
+                       </div>
+                   </div>
+               )}
+
+               {question.mnemonic && (
                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3 border border-amber-100 dark:border-amber-800/30">
                        <BrainCircuit className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
                        <div>
@@ -268,46 +333,14 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                    </div>
                )}
 
-               {/* Pin Toggle Button (Post-Answer) */}
-               {isMistakeMode && (
-                   <div className="flex justify-end mb-3">
-                        <button 
-                            onClick={onTogglePin}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${isPinned ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}
-                        >
-                            {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
-                            {isPinned ? '已保留 (不移除)' : '不保留 (答对移除)'}
-                        </button>
-                   </div>
-               )}
-
-               {/* Action Buttons */}
                <div className="flex gap-3">
-                    {!showMnemonic && question.mnemonic && (
-                        <button 
-                            onClick={() => setShowMnemonic(true)}
-                            className="flex-1 py-3.5 rounded-xl font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Lightbulb className="w-4 h-4" />
-                            看巧记
-                        </button>
-                    )}
-                    
                     {showRetry ? (
-                        <button 
-                            onClick={onRetry}
-                            className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                            <RotateCcw className="w-5 h-5" />
-                            <span>重试 (最后一道)</span>
+                        <button onClick={onRetry} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <RotateCcw className="w-5 h-5" /> <span>重试 (最后一道)</span>
                         </button>
                     ) : (
-                        <button 
-                            onClick={onNext}
-                            className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                            <span>下一题</span>
-                            <ArrowRight className="w-5 h-5" />
+                        <button onClick={onNext} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <span>下一题</span> <ArrowRight className="w-5 h-5" />
                         </button>
                     )}
                </div>

@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Question, UserProgress, INITIAL_PROGRESS } from '../types';
 import { SEED_QUESTIONS } from '../data/seed';
 
-// Updated storage key to v7 for new pinning feature
-const STORAGE_KEY_QUESTIONS = 'dm_questions_v7';
-const STORAGE_KEY_PROGRESS = 'dm_progress_v7';
+// Updated storage key to v9 for Option Letter Fix
+const STORAGE_KEY_QUESTIONS = 'dm_questions_v9';
+const STORAGE_KEY_PROGRESS = 'dm_progress_v9';
 
 export const useQuestionBank = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -25,7 +26,6 @@ export const useQuestionBank = () => {
 
     if (storedProgress) {
       const parsed = JSON.parse(storedProgress);
-      // Ensure pinnedMistakes exists for migration
       if (!parsed.pinnedMistakes) parsed.pinnedMistakes = [];
       setProgress(parsed);
     }
@@ -53,7 +53,7 @@ export const useQuestionBank = () => {
     setQuestions(prev => prev.filter(q => q.id !== id));
   };
 
-  const recordAttempt = (questionId: string, isCorrect: boolean) => {
+  const recordAttempt = (questionId: string, isCorrect: boolean, keepInMistakes: boolean = false) => {
     setProgress(prev => {
       const currentStat = prev.questionStats[questionId] || { attempts: [], lastAttemptAt: 0 };
       
@@ -64,17 +64,20 @@ export const useQuestionBank = () => {
 
       const newStreak = isCorrect ? prev.streak + 1 : 0;
       
-      // Auto-remove from pinned if correct (default behavior, unless toggled back via togglePin)
-      // Actually, standard behavior: if you get it right, we don't automatically unpin. 
-      // Pinning is manual. "Mistake" status is automatic.
-      // But for the "Mistake Mode" logic: a question is a mistake if (LastAttempt=False OR Pinned=True).
-      // So if I answer correct, LastAttempt=True. If it was NOT pinned, it drops out of mistakes.
-      // If it WAS pinned, it stays in mistakes.
+      // Manage pinned list
+      let newPinned = prev.pinnedMistakes || [];
+      if (keepInMistakes) {
+          if (!newPinned.includes(questionId)) newPinned = [...newPinned, questionId];
+      } else if (isCorrect) {
+          // If correct and NOT asked to keep, remove from pin
+          newPinned = newPinned.filter(id => id !== questionId);
+      }
 
       return {
         ...prev,
         streak: newStreak,
         totalAnswered: prev.totalAnswered + 1,
+        pinnedMistakes: newPinned,
         questionStats: {
           ...prev.questionStats,
           [questionId]: newStat

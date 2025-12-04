@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserProgress, Question, QuestionType } from '../types';
+import { UserProgress, Question, QuestionType, QuestionStat } from '../types';
 import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight, Play } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -11,7 +11,7 @@ interface StatsViewProps {
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, questions, onReview }) => {
-  const attemptedQuestions = Object.values(progress.questionStats);
+  const attemptedQuestions = Object.values(progress.questionStats) as QuestionStat[];
   const firstTryCorrectCount = attemptedQuestions.filter(stat => stat.attempts.length > 0 && stat.attempts[0] === true).length;
   const firstTryAccuracy = attemptedQuestions.length > 0
     ? Math.round((firstTryCorrectCount / attemptedQuestions.length) * 100)
@@ -23,7 +23,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
   // Type Analysis
   const getAccuracyByType = (type: QuestionType) => {
     const typeQs = questions.filter(q => q.type === type);
-    const typeStats = typeQs.map(q => progress.questionStats[q.id]).filter(s => s);
+    const typeStats = typeQs.map(q => progress.questionStats[q.id]).filter((s): s is QuestionStat => !!s);
     if (typeStats.length === 0) return 0;
     const correct = typeStats.reduce((acc, s) => acc + s.attempts.filter(a => a).length, 0);
     const total = typeStats.reduce((acc, s) => acc + s.attempts.length, 0);
@@ -120,7 +120,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
                               答案: <span className="text-green-600 dark:text-green-400">
                                 {item.q?.type === QuestionType.JUDGE 
                                     ? (item.q?.correctAnswer ? '正确' : '错误') 
-                                    : String(item.q?.correctAnswer)
+                                    : (item.q?.correctAnswer as string[]).join('、')
                                 }
                               </span>
                           </p>

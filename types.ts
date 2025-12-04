@@ -8,8 +8,9 @@ export interface Question {
   type: QuestionType;
   content: string;
   options?: string[]; // Only for CHOICE
-  correctAnswer: string | boolean; 
+  correctAnswer: string | string[] | boolean; // Changed to support multi-select
   mnemonic?: string; // 巧记
+  analysis?: string; // 深度辨析/理由
   tags?: string[];
 }
 
