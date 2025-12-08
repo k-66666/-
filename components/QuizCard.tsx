@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronDown, Move3d, Target, Eye, Atom, ScanLine } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronDown, MousePointer2, Scan, Trophy, Zap } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
@@ -17,229 +17,244 @@ interface QuizCardProps {
   isMistakeMode?: boolean;
 }
 
-// --- Holographic Universe Component ---
-const HolographicUniverse = ({ centerText, points }: { centerText: string, points: string[] }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    
-    // Physics State
-    const [rotation, setRotation] = useState({ x: 0, y: 0 });
-    const isDragging = useRef(false);
-    const lastMouse = useRef({ x: 0, y: 0 });
-    const velocity = useRef({ x: 0.2, y: 0.1 }); // Initial auto-rotation
-    const momentumId = useRef<number>(0);
+// --- Types for the Game Engine ---
+interface GameNode {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  status: 'active' | 'captured' | 'collecting';
+  color: string;
+}
 
-    // Geometry Calculation
-    const nodePositions = useMemo(() => {
-        return points.map((_, i) => {
-            const count = points.length;
-            const phi = Math.acos(1 - 2 * (i + 0.5) / count);
-            const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
-            const radius = 140; // Reduced slightly to fit connecting lines
-            return {
-                x: radius * Math.sin(phi) * Math.cos(theta),
-                y: radius * Math.sin(phi) * Math.sin(theta),
-                z: radius * Math.cos(phi),
-                id: i
-            };
-        });
+// --- Gamified Memory Engine ---
+const GamifiedMemoryEngine = ({ centerText, points, onComplete }: { centerText: string, points: string[], onComplete: () => void }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [nodes, setNodes] = useState<GameNode[]>([]);
+    const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory'>('intro');
+    const [score, setScore] = useState(0);
+    const [combo, setCombo] = useState(0);
+    const requestRef = useRef<number>(0);
+    
+    // Colors for the cyberpunk theme
+    const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899'];
+
+    // Initialize Game
+    useEffect(() => {
+        if (points.length === 0) return;
+        
+        const initialNodes: GameNode[] = points.map((text, i) => ({
+            id: `node-${i}`,
+            text,
+            x: Math.random() * 60 + 20, // 20-80%
+            y: Math.random() * 60 + 20, // 20-80%
+            vx: (Math.random() - 0.5) * 0.4, // Random velocity
+            vy: (Math.random() - 0.5) * 0.4,
+            status: 'active',
+            color: colors[i % colors.length]
+        }));
+        setNodes(initialNodes);
+        
+        // Start intro animation sequence
+        const timer = setTimeout(() => setGameStatus('playing'), 1500);
+        return () => clearTimeout(timer);
     }, [points]);
 
-    // Input Handlers
-    const handleStart = (clientX: number, clientY: number) => {
-        isDragging.current = true;
-        lastMouse.current = { x: clientX, y: clientY };
-        velocity.current = { x: 0, y: 0 }; // Stop auto-rotation on grab
-    };
+    // Physics Loop
+    const updatePhysics = () => {
+        setNodes(prevNodes => prevNodes.map(node => {
+            if (node.status === 'captured') return node;
 
-    const handleMove = (clientX: number, clientY: number) => {
-        if (!isDragging.current) return;
-        
-        const deltaX = clientX - lastMouse.current.x;
-        const deltaY = clientY - lastMouse.current.y;
-        
-        // Update rotation immediately for responsiveness
-        const sensitivity = 0.5;
-        setRotation(prev => ({
-            x: prev.x - deltaY * sensitivity,
-            y: prev.y + deltaX * sensitivity
+            let { x, y, vx, vy } = node;
+
+            if (node.status === 'collecting') {
+                // Fly to center (50, 50)
+                const dx = 50 - x;
+                const dy = 50 - y;
+                x += dx * 0.15;
+                y += dy * 0.15;
+                
+                // If close enough, mark captured
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+                    return { ...node, status: 'captured', x: 50, y: 50 };
+                }
+                return { ...node, x, y };
+            }
+
+            // Normal floating physics
+            x += vx;
+            y += vy;
+
+            // Wall bounce
+            if (x <= 10 || x >= 90) vx *= -1;
+            if (y <= 10 || y >= 90) vy *= -1;
+
+            return { ...node, x, y, vx, vy };
         }));
 
-        // Calculate velocity for inertia
-        velocity.current = {
-            x: -deltaY * sensitivity,
-            y: deltaX * sensitivity
-        };
-
-        lastMouse.current = { x: clientX, y: clientY };
+        requestRef.current = requestAnimationFrame(updatePhysics);
     };
 
-    const handleEnd = () => {
-        isDragging.current = false;
-    };
-
-    // Physics Loop (Inertia & Auto-rotation)
     useEffect(() => {
-        const loop = () => {
-            if (!isDragging.current) {
-                // Apply friction
-                velocity.current.x *= 0.95;
-                velocity.current.y *= 0.95;
-
-                // Minimum auto-rotate speed to keep it alive
-                if (Math.abs(velocity.current.y) < 0.02 && Math.abs(velocity.current.x) < 0.02) {
-                     velocity.current.y = 0.05; 
-                }
-
-                setRotation(prev => ({
-                    x: prev.x + velocity.current.x,
-                    y: prev.y + velocity.current.y
-                }));
-            }
-            momentumId.current = requestAnimationFrame(loop);
+        if (gameStatus === 'playing') {
+            requestRef.current = requestAnimationFrame(updatePhysics);
+        }
+        return () => {
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
-        momentumId.current = requestAnimationFrame(loop);
-        return () => cancelAnimationFrame(momentumId.current);
-    }, []);
+    }, [gameStatus]);
+
+    // Check Win Condition
+    useEffect(() => {
+        if (nodes.length > 0 && nodes.every(n => n.status === 'captured') && gameStatus !== 'victory') {
+            setGameStatus('victory');
+            setTimeout(onComplete, 1000);
+        }
+    }, [nodes, gameStatus]);
+
+    const handleNodeClick = (id: string) => {
+        if (gameStatus !== 'playing') return;
+        
+        setNodes(prev => {
+            const node = prev.find(n => n.id === id);
+            if (!node || node.status !== 'active') return prev;
+            
+            // Trigger haptic/sound effect logic here
+            setScore(s => s + 100 + (combo * 10));
+            setCombo(c => c + 1);
+            
+            return prev.map(n => n.id === id ? { ...n, status: 'collecting' } : n);
+        });
+
+        // Reset combo if no click for 2 seconds
+        // (Simplified logic for React state)
+    };
 
     return (
-        <div 
-            ref={containerRef}
-            className="h-[400px] w-full relative overflow-hidden rounded-3xl bg-slate-950 perspective-1000 cursor-grab active:cursor-grabbing touch-none shadow-2xl border border-slate-800 ring-1 ring-white/10 group"
-            onMouseDown={e => handleStart(e.clientX, e.clientY)}
-            onMouseMove={e => handleMove(e.clientX, e.clientY)}
-            onMouseUp={handleEnd}
-            onMouseLeave={handleEnd}
-            onTouchStart={e => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
-            onTouchMove={e => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
-            onTouchEnd={handleEnd}
-        >
-            {/* 1. Dynamic Background Field */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15)_0%,rgba(15,23,42,1)_70%)]" />
-                {/* Floating Stars */}
-                {[...Array(20)].map((_, i) => (
-                    <div 
-                        key={i}
-                        className="absolute rounded-full bg-white animate-pulse"
-                        style={{
-                            width: Math.random() * 2 + 1 + 'px',
-                            height: Math.random() * 2 + 1 + 'px',
-                            left: Math.random() * 100 + '%',
-                            top: Math.random() * 100 + '%',
-                            opacity: Math.random() * 0.5 + 0.1,
-                            animationDuration: Math.random() * 3 + 2 + 's'
-                        }}
+        <div ref={containerRef} className="relative w-full h-[400px] bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl group select-none">
+            
+            {/* 1. Background Grid & Effects */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(60deg)_translateY(-100px)_scale(1.5)] opacity-50 pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,rgba(2,6,23,1)_80%)] pointer-events-none" />
+            
+            {/* CRT Scanline Effect */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[size:100%_2px,3px_100%] pointer-events-none z-20" />
+
+            {/* 2. HUD Interface */}
+            <div className="absolute top-4 left-4 z-10 font-mono text-xs">
+                <div className="flex items-center gap-2 text-cyan-400 mb-1">
+                    <Scan className="w-4 h-4 animate-pulse" />
+                    <span>NEURAL_LINK: {gameStatus === 'playing' ? 'ACTIVE' : gameStatus.toUpperCase()}</span>
+                </div>
+                <div className="text-slate-500">TARGETS: {nodes.filter(n => n.status === 'captured').length}/{nodes.length}</div>
+            </div>
+
+            <div className="absolute top-4 right-4 z-10 font-mono text-right">
+                <div className="text-2xl font-black text-yellow-400 tabular-nums tracking-tighter drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]">
+                    {score.toString().padStart(6, '0')}
+                </div>
+                {combo > 1 && (
+                    <div className="text-xs font-bold text-orange-500 animate-bounce">
+                        {combo}x COMBO!
+                    </div>
+                )}
+            </div>
+
+            {/* 3. The Central Core (Question) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 z-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                <div className={`relative transition-all duration-500 ${gameStatus === 'victory' ? 'scale-125' : 'scale-100'}`}>
+                    <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
+                    <div className="relative bg-slate-900/80 backdrop-blur-md border border-blue-500/50 p-4 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                        <BrainCircuit className={`w-12 h-12 text-blue-400 ${gameStatus === 'playing' ? 'animate-pulse' : ''}`} />
+                    </div>
+                </div>
+                {/* Connecting Beams */}
+                {nodes.filter(n => n.status === 'captured').map(n => (
+                    <div key={`beam-${n.id}`} className="absolute top-1/2 left-1/2 w-[200px] h-[2px] bg-gradient-to-r from-blue-500 to-transparent origin-left animate-pulse" 
+                        style={{ 
+                            transform: `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`,
+                            opacity: 0.5
+                        }} 
                     />
                 ))}
             </div>
 
-            {/* 2. HUD Elements */}
-            <div className="absolute top-4 left-4 text-[10px] font-mono text-cyan-500/60 pointer-events-none flex items-center gap-2">
-                <ScanLine className="w-3 h-3 animate-pulse" />
-                <span>NEURAL_CORE_ACTIVE</span>
-            </div>
-            <div className="absolute bottom-4 left-4 text-[10px] font-mono text-cyan-500/60 pointer-events-none border border-cyan-500/20 px-2 py-1 rounded">
-                ROT: X{rotation.x.toFixed(0)} Y{rotation.y.toFixed(0)}
-            </div>
-
-            {/* 3. The 3D Universe */}
-            <div 
-                className="w-full h-full flex items-center justify-center preserve-3d"
-                style={{ 
-                    transformStyle: 'preserve-3d',
-                    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
-                }}
-            >
-                {/* Connecting Lines Layer (SVG in 3D space is tricky, using thin divs) */}
-                {nodePositions.map((pos, i) => {
-                    // Calculate distance for line length
-                    const dist = Math.sqrt(pos.x**2 + pos.y**2 + pos.z**2);
-                    // Calculate angles for the line to point to center
-                    // We render a line from center to point
-                    // This uses a transform trick: translate half distance, then rotate to face point
-                    // Actually, simpler CSS 3D approach:
-                    // Just render the line inside the node container, pointing back to 0,0,0?
-                    // No, easier to render a div from 0,0,0 to the point.
-                    
-                    // Simplifying: We will draw lines using a specific transform on the Node itself
-                    // The "Beam"
-                    return (
-                        <div 
-                            key={`beam-${i}`}
-                            className="absolute top-1/2 left-1/2 origin-left bg-gradient-to-r from-cyan-500/0 via-cyan-500/50 to-blue-500/0"
-                            style={{
-                                width: dist + 'px',
-                                height: '1px',
-                                transform: `translate3d(-50%, -50%, 0) rotate3d(${pos.y}, ${-pos.x}, 0, ${Math.acos(pos.z/dist)}rad) rotateY(90deg)`, // This math is complex to perfect in pure CSS without a library.
-                                // Fallback visual: Just a glowing orb at the center and nodes.
-                                // Let's try a different connection visual:
-                            }}
-                        />
-                    );
-                })}
+            {/* 4. Game Nodes (The Keywords) */}
+            {gameStatus !== 'intro' && nodes.map((node) => {
+                if (node.status === 'captured') return null; // Don't render captured nodes floating
                 
-                {/* Central Core (The Brain) */}
-                <div className="absolute preserve-3d animate-pulse">
-                     {/* Outer Glow Ring */}
-                    <div className="absolute inset-0 -m-8 rounded-full border border-cyan-500/30 w-32 h-32 animate-[spin_10s_linear_infinite]" />
-                    <div className="absolute inset-0 -m-6 rounded-full border border-blue-500/30 w-28 h-28 animate-[spin_15s_linear_infinite_reverse]" />
-                    
-                    {/* The Core Orb */}
-                    <div className="w-16 h-16 rounded-full bg-slate-900 border-2 border-cyan-400 shadow-[0_0_50px_rgba(34,211,238,0.6)] flex items-center justify-center z-20 relative">
-                        <Atom className="w-8 h-8 text-cyan-200 animate-spin-slow" />
-                    </div>
-                </div>
-
-                {/* Nodes */}
-                {nodePositions.map((pos, i) => (
-                    <div
-                        key={i}
-                        className="absolute flex items-center justify-center preserve-3d"
+                return (
+                    <button
+                        key={node.id}
+                        onClick={() => handleNodeClick(node.id)}
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 group transition-transform active:scale-95 ${node.status === 'collecting' ? 'duration-500 ease-in' : 'duration-0'}`}
                         style={{
-                            transform: `translate3d(${pos.x}px, ${pos.y}px, ${pos.z}px)`
+                            left: `${node.x}%`,
+                            top: `${node.y}%`,
+                            zIndex: 10
                         }}
                     >
-                        {/* Connection Line (Visual Hack: A gradient line pointing roughly to center) */}
+                        {/* The Node Appearance */}
                         <div 
-                            className="absolute top-1/2 left-1/2 w-[140px] h-[1px] bg-gradient-to-l from-cyan-500/50 to-transparent origin-right"
-                            style={{
-                                transform: `translate(-100%, -50%) rotateY(${90}deg) rotateX(${0}deg)`, // Simplified connection
-                                width: '140px',
-                                right: '50%'
-                            }}
-                        />
-
-                        {/* The Node Card - Billboard Effect (Always face user) */}
-                        <div 
-                            className="relative group/node"
-                            style={{
-                                transform: `rotateY(${-rotation.y}deg) rotateX(${-rotation.x}deg)`
+                            className="relative px-4 py-2 bg-slate-900/90 backdrop-blur-xl border-2 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center gap-2 overflow-hidden hover:scale-105 transition-all"
+                            style={{ 
+                                borderColor: node.color,
+                                boxShadow: `0 0 20px ${node.color}40`
                             }}
                         >
-                            <div className="relative bg-slate-900/80 backdrop-blur-md border border-cyan-500/30 p-3 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.15)] w-32 transition-all duration-300 group-hover/node:scale-110 group-hover/node:bg-slate-800/90 group-hover/node:border-cyan-400 group-hover/node:shadow-[0_0_30px_rgba(6,182,212,0.4)]">
-                                {/* Decorators */}
-                                <div className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-cyan-500" />
-                                <div className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-cyan-500" />
-                                
-                                <div className="flex items-center gap-2 mb-1 border-b border-white/10 pb-1">
-                                    <div className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-[8px] font-mono border border-cyan-500/50">
-                                        {i + 1}
-                                    </div>
-                                    <div className="h-0.5 flex-1 bg-gradient-to-r from-cyan-500/50 to-transparent" />
-                                </div>
-                                <div className="text-[10px] font-bold text-cyan-100 leading-tight drop-shadow-md text-center">
-                                    {points[i]}
-                                </div>
-                            </div>
+                            {/* Scanning Line Animation */}
+                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />
+                            
+                            <div className="w-2 h-2 rounded-full animate-ping absolute left-2" style={{ backgroundColor: node.color }} />
+                            <span className="relative z-10 text-sm font-bold text-white tracking-wide pl-2" style={{ textShadow: `0 0 10px ${node.color}` }}>
+                                {node.text}
+                            </span>
+                        </div>
+                        
+                        {/* Target Reticle Effect */}
+                        <div className="absolute inset-0 -m-2 border border-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity scale-110 group-hover:scale-100 duration-300 pointer-events-none">
+                            <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white" />
+                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white" />
+                        </div>
+                    </button>
+                );
+            })}
+
+            {/* 5. Intro Overlay */}
+            {gameStatus === 'intro' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm z-50">
+                    <div className="text-center animate-in zoom-in duration-500">
+                        <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 mb-2">
+                            SYSTEM LINK
+                        </div>
+                        <div className="text-sm text-cyan-500 font-mono animate-pulse">
+                            INITIALIZING MEMORY PROTOCOLS...
                         </div>
                     </div>
-                ))}
-            </div>
+                </div>
+            )}
+
+            {/* 6. Victory Overlay */}
+            {gameStatus === 'victory' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-50 pointer-events-none">
+                    <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_0_20px_rgba(234,179,8,0.8)] animate-in zoom-in duration-300 scale-150">
+                        100%
+                    </div>
+                    <div className="text-yellow-100 font-bold tracking-[0.5em] text-sm mt-2 animate-in slide-in-from-bottom-4 fade-in duration-700">
+                        SYNCHRONIZED
+                    </div>
+                </div>
+            )}
             
-            {/* Control Hint */}
-            <div className="absolute bottom-4 right-4 flex items-center gap-2 text-[10px] text-cyan-300/80 font-mono bg-slate-900/60 px-3 py-1.5 rounded-full border border-cyan-500/30 pointer-events-none backdrop-blur-sm shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <Move3d className="w-3 h-3 animate-spin-slow" />
-                <span>DRAG TO ROTATE 360°</span>
+            {/* Captured List (HUD Bottom) */}
+            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 justify-center pointer-events-none">
+                 {nodes.filter(n => n.status === 'captured').map(n => (
+                     <div key={n.id} className="bg-slate-900/80 border border-slate-700 text-slate-300 px-2 py-1 rounded text-[10px] font-mono animate-in slide-in-from-bottom-2 fade-in">
+                         {n.text}
+                     </div>
+                 ))}
             </div>
         </div>
     );
@@ -454,31 +469,36 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             <div className="space-y-6">
                  {!essayRevealed ? (
                      <div className="flex flex-col items-center justify-center py-12 gap-6 text-center">
-                         <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center animate-bounce shadow-xl">
-                             <BrainCircuit className="w-12 h-12 text-indigo-500" />
+                         <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center animate-bounce shadow-xl relative overflow-hidden group cursor-pointer" onClick={() => setEssayRevealed(true)}>
+                             <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                             <MousePointer2 className="w-12 h-12 text-indigo-500 relative z-10" />
                          </div>
                          <div className="space-y-2">
-                             <p className="text-slate-500 dark:text-slate-400 font-medium">请在心中默想答案</p>
-                             <p className="text-slate-400 dark:text-slate-500 text-xs">Think about the answer before revealing</p>
+                             <p className="text-slate-500 dark:text-slate-400 font-bold">准备好开始记忆了吗？</p>
+                             <p className="text-slate-400 dark:text-slate-500 text-xs">点击下方按钮启动神经连结</p>
                          </div>
                          <button 
                             onClick={() => setEssayRevealed(true)}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none active:scale-95 transition-all flex items-center gap-2 mt-4"
                          >
-                            <Eye className="w-5 h-5" /> 查看核心考点
+                            <Zap className="w-5 h-5" /> 启动记忆引擎
                          </button>
                      </div>
                  ) : (
                      <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-500">
-                         {/* Holographic Universe Map */}
+                         {/* Gamified Memory Engine */}
                          <div className="w-full">
                              <h3 className="text-xs font-bold text-indigo-500 dark:text-cyan-500 uppercase tracking-wider flex items-center gap-1.5 mb-3 px-1">
-                                <Atom className="w-4 h-4 animate-spin-slow" /> 全息思维引擎 (Holographic Core)
+                                <Trophy className="w-4 h-4 animate-bounce" /> 神经连结协议 (Neural Link Protocol)
                             </h3>
-                             <HolographicUniverse 
+                             <GamifiedMemoryEngine 
                                 centerText={question.content}
                                 points={question.keyPoints || []}
+                                onComplete={() => {}}
                              />
+                             <div className="text-center text-[10px] text-slate-400 mt-2">
+                                 点击浮动的关键词来收集它们！
+                             </div>
                          </div>
                          
                          {/* Full Reference Answer */}
