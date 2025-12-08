@@ -1,7 +1,6 @@
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Zap, ChevronDown, Trophy, Skull, ShieldCheck, Search, RotateCcw, AlertOctagon, Scan, Eye, EyeOff, Gamepad2 } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, BookOpen, AlertTriangle, Pin, PinOff, Zap, ChevronDown, ChevronUp, AlertOctagon, Eye, EyeOff, Gamepad2, ThumbsUp, XOctagon } from 'lucide-react';
 import { VisualMnemonic } from './VisualMnemonic';
 
 interface QuizCardProps {
@@ -43,8 +42,15 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   const [essayRevealed, setEssayRevealed] = useState(false);
   const [essayKeywords, setEssayKeywords] = useState<{text: string, hidden: boolean}[]>([]);
   const [mnemonicMode, setMnemonicMode] = useState<'text' | 'visual'>('text');
+  
+  // New State for result card collapse
+  const [isResultExpanded, setIsResultExpanded] = useState(true);
+
+  // Transition State for Fly In / Fly Out
+  const [transitionState, setTransitionState] = useState<'enter' | 'idle' | 'exit'>('enter');
 
   useEffect(() => {
+    // Reset state for new question
     setSelectedOptions(question.type === QuestionType.CHOICE ? [] : null);
     setHasAnswered(false);
     setShowMnemonic(false);
@@ -53,7 +59,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     setFlashType('none');
     setIsCorrectAnswer(false);
     setEssayRevealed(false);
-    setMnemonicMode('text'); // Reset to text mode for new questions
+    setMnemonicMode('text');
+    setIsResultExpanded(true);
+    setTransitionState('enter');
+
+    // After animation delay, set to idle
+    const timer = setTimeout(() => setTransitionState('idle'), 300);
 
     if (question.type === QuestionType.ESSAY) {
         const answer = String(question.correctAnswer);
@@ -63,7 +74,23 @@ export const QuizCard: React.FC<QuizCardProps> = ({
         }));
         setEssayKeywords(chunks);
     }
+    return () => clearTimeout(timer);
   }, [question]);
+
+  // Handle Question Transitions
+  const handleNextWithAnim = () => {
+    setTransitionState('exit');
+    setTimeout(() => {
+        onNext();
+    }, 300); // Match animation duration
+  };
+
+  const handleRetryWithAnim = () => {
+      setTransitionState('exit');
+      setTimeout(() => {
+          onRetry();
+      }, 300);
+  };
 
   const isSingleChoice = useMemo(() => {
       if (question.type !== QuestionType.CHOICE) return false;
@@ -214,7 +241,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
   const Confetti = () => (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-      {[...Array(15)].map((_, i) => (
+      {[...Array(25)].map((_, i) => (
         <div key={i} className="confetti" style={{ 
           left: `${Math.random() * 100}%`, 
           backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'][Math.floor(Math.random() * 4)],
@@ -224,13 +251,39 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     </div>
   );
 
+  const FeedbackStamp = () => (
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 animate-stamp">
+          <div className={`rounded-full p-8 shadow-2xl backdrop-blur-sm border-8 ${isCorrectAnswer ? 'bg-green-100/90 border-green-500 text-green-600' : 'bg-red-100/90 border-red-500 text-red-600'}`}>
+              {isCorrectAnswer ? (
+                  <div className="flex flex-col items-center">
+                    <ThumbsUp className="w-24 h-24 stroke-[3]" />
+                    <span className="text-3xl font-black mt-2">Bingo!</span>
+                  </div>
+              ) : (
+                  <div className="flex flex-col items-center">
+                    <XOctagon className="w-24 h-24 stroke-[3]" />
+                    <span className="text-3xl font-black mt-2">Oops!</span>
+                  </div>
+              )}
+          </div>
+      </div>
+  );
+
   const showRetry = isMistakeMode && mistakeCount <= 1 && !isCorrectAnswer && hasAnswered;
 
+  // Animation Classes
+  const containerClass = `flex flex-col h-full relative z-0 overflow-hidden bg-slate-50 dark:bg-slate-950 
+    ${transitionState === 'enter' ? 'animate-slide-in-right opacity-100' : ''}
+    ${transitionState === 'exit' ? 'animate-slide-out-left opacity-0' : ''}`;
+
   return (
-    <div className="flex flex-col h-full relative z-0 overflow-hidden">
-      {flashType === 'green' && <div className="absolute inset-0 z-10 animate-flash-green pointer-events-none rounded-3xl" />}
-      {flashType === 'red' && <div className="absolute inset-0 z-10 animate-flash-red pointer-events-none rounded-3xl" />}
+    <div className={containerClass}>
+      {flashType === 'green' && <div className="absolute inset-0 z-10 animate-flash-green pointer-events-none" />}
+      {flashType === 'red' && <div className="absolute inset-0 z-10 animate-flash-red pointer-events-none" />}
       {showConfetti && <Confetti />}
+      
+      {/* Visual Feedback Stamp */}
+      {hasAnswered && <FeedbackStamp />}
 
       {/* Top Stats Bar */}
       <div className="flex-none pt-1 pb-2 px-1">
@@ -387,51 +440,73 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
       {/* Result Panel (Bottom Sheet) */}
       {hasAnswered && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 z-30 animate-in slide-in-from-bottom-full duration-300">
-           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 dark:border-slate-800 p-5 max-h-[60vh] overflow-y-auto">
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-30 animate-spring-up">
+           <div className={`bg-white dark:bg-slate-900 rounded-2xl shadow-[0_10px_60px_-15px_rgba(0,0,0,0.3)] border-2 ${isCorrectAnswer ? 'border-green-400 dark:border-green-900' : 'border-red-400 dark:border-red-900'} p-5 flex flex-col transition-all duration-300`} style={{ maxHeight: isResultExpanded ? '60vh' : 'auto' }}>
                
-               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+               {/* Drag Handle - Click to Toggle */}
+               <div 
+                 className="w-full flex justify-center pb-4 -mt-2 cursor-pointer touch-manipulation"
+                 onClick={() => setIsResultExpanded(!isResultExpanded)}
+               >
+                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors" />
+               </div>
+
+               {/* Header Section */}
+               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
                    <div className={`flex items-center gap-2 font-black text-xl ${isCorrectAnswer ? 'text-green-500' : 'text-red-500'}`}>
                         {isCorrectAnswer ? <><CheckCircle2 className="w-6 h-6" /><span>回答正确!</span></> : <><AlertOctagon className="w-6 h-6" /><span>回答错误</span></>}
                    </div>
-                   {isMistakeMode && (
-                        <button onClick={onTogglePin} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${isPinned ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
-                            {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
-                            {isPinned ? '已保留' : '不保留'}
+                   
+                   <div className="flex items-center gap-3">
+                        {isMistakeMode && (
+                            <button onClick={onTogglePin} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${isPinned ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
+                                {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
+                                {isPinned ? '已保留' : '不保留'}
+                            </button>
+                        )}
+                        <button 
+                            onClick={() => setIsResultExpanded(!isResultExpanded)}
+                            className="p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            {isResultExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                         </button>
-                   )}
+                   </div>
                </div>
 
-               {(!isCorrectAnswer || question.type === QuestionType.ESSAY) && (
-                   <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30">
-                       <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">正确答案</div>
-                       <div className="text-lg font-black text-green-700 dark:text-green-300 whitespace-pre-wrap">
-                            {question.type === QuestionType.JUDGE 
-                                ? (question.correctAnswer ? '正确 (√)' : '错误 (×)') 
-                                : question.type === QuestionType.ESSAY 
-                                    ? String(question.correctAnswer)
-                                    : (getCorrectAnswerText() as string[]).join(' ')}
-                       </div>
-                   </div>
-               )}
+               {/* Collapsible Content Section */}
+               <div className={`overflow-y-auto transition-all duration-300 ${isResultExpanded ? 'opacity-100 flex-1' : 'h-0 opacity-0 overflow-hidden'}`}>
+                    {(!isCorrectAnswer || question.type === QuestionType.ESSAY) && (
+                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30">
+                            <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">正确答案</div>
+                            <div className="text-lg font-black text-green-700 dark:text-green-300 whitespace-pre-wrap">
+                                    {question.type === QuestionType.JUDGE 
+                                        ? (question.correctAnswer ? '正确 (√)' : '错误 (×)') 
+                                        : question.type === QuestionType.ESSAY 
+                                            ? String(question.correctAnswer)
+                                            : (getCorrectAnswerText() as string[]).join(' ')}
+                            </div>
+                        </div>
+                    )}
 
-               {question.mnemonic && (
-                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3 border border-amber-100 dark:border-amber-800/30">
-                       <BrainCircuit className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
-                       <div>
-                           <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">巧记 Mnemonic</div>
-                           <div className="text-sm font-bold text-amber-900 dark:text-amber-100">{question.mnemonic}</div>
-                       </div>
-                   </div>
-               )}
+                    {question.mnemonic && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3 border border-amber-100 dark:border-amber-800/30">
+                            <BrainCircuit className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                            <div>
+                                <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">巧记 Mnemonic</div>
+                                <div className="text-sm font-bold text-amber-900 dark:text-amber-100">{question.mnemonic}</div>
+                            </div>
+                        </div>
+                    )}
+               </div>
 
-               <div className="flex gap-3 mt-2">
+               {/* Footer Actions - Always Visible */}
+               <div className="flex gap-3 mt-2 shrink-0">
                     {showRetry ? (
-                        <button onClick={onRetry} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <RotateCcw className="w-5 h-5" /> <span>重试</span>
+                        <button onClick={handleRetryWithAnim} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <ArrowRight className="w-5 h-5 rotate-180" /> <span>重试</span>
                         </button>
                     ) : (
-                        <button onClick={onNext} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <button onClick={handleNextWithAnim} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
                             <span>下一题</span> <ArrowRight className="w-5 h-5" />
                         </button>
                     )}
