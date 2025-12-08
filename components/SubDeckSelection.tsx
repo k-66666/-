@@ -107,28 +107,28 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
   const rangeOptions = [
     {
-      label: '单选题 (基础)',
+      label: '单选题 (1-150)',
       min: 1,
       max: 150,
       icon: <CheckSquare className="w-6 h-6 text-blue-500" />,
       color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
     },
     {
-      label: '多选题 (进阶)',
+      label: '多选题 (151-300)',
       min: 151,
       max: 300,
       icon: <ListChecks className="w-6 h-6 text-purple-500" />,
       color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
     },
     {
-      label: '判断题 (速刷)',
+      label: '判断题 (301-450)',
       min: 301,
       max: 450,
       icon: <Scale className="w-6 h-6 text-green-500" />,
       color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
     },
     {
-      label: '全真模拟 (全部)',
+      label: '全部题 (1-450)',
       min: 1,
       max: 1000,
       icon: <InfinityIcon className="w-6 h-6 text-orange-500" />,
@@ -138,9 +138,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
   // Specific stats
   const examChoiceStats = getTagStats('2022真题', QuestionType.CHOICE);
-  // This now only counts the 5 real exam essays
   const examEssayStats = getTagStats('2022真题', QuestionType.ESSAY); 
-  // This counts the 27 review essays
   const reviewEssayStats = getTagStats('简答复习', QuestionType.ESSAY);
 
   return (
@@ -196,7 +194,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
             </button>
         </div>
 
-        {/* Review Essays Section (The 27 questions) */}
+        {/* Review Essays Section */}
         <div className="grid grid-cols-1 gap-3">
              <button 
                 onClick={() => onSelect({ type: 'tag', tag: '简答复习', label: '简答题重点复习', questionType: QuestionType.ESSAY })}
@@ -208,7 +206,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
                 <div>
                     <div className="font-bold text-slate-800 dark:text-slate-100">简答题重点复习 (27道)</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                        {reviewEssayStats.count > 0 ? `${reviewEssayStats.count}道 · 可视化速记` : '暂无题目'}
+                        {reviewEssayStats.count > 0 ? `${reviewEssayStats.count}道 · 关键字速记` : '暂无题目'}
                     </div>
                 </div>
             </button>
@@ -217,28 +215,30 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
         <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
 
         {/* Standard Ranges */}
-        {rangeOptions.map((opt, idx) => {
-            const stats = getDeckStats(opt.min, opt.max);
-            const subText = stats.count > 0 
-                ? `${stats.count}道题 · 第${stats.round}遍刷` 
-                : '暂无题目';
+        <div className="grid gap-3">
+            {rangeOptions.map((opt, idx) => {
+                const stats = getDeckStats(opt.min, opt.max);
+                const subText = stats.count > 0 
+                    ? `${stats.count}道题 · 第${stats.round}遍刷` 
+                    : '暂无题目';
 
-            return (
-                <button 
-                    key={idx}
-                    onClick={() => onSelect({ type: 'range', min: opt.min, max: opt.max, label: opt.label })}
-                    className={`w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md ${opt.color} dark:border-opacity-50`}
-                >
-                    <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
-                        {opt.icon}
-                    </div>
-                    <div>
-                        <div className="font-bold text-slate-800 dark:text-slate-100">{opt.label}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{subText}</div>
-                    </div>
-                </button>
-            );
-        })}
+                return (
+                    <button 
+                        key={idx}
+                        onClick={() => onSelect({ type: 'range', min: opt.min, max: opt.max, label: opt.label })}
+                        className={`w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md ${opt.color} dark:border-opacity-50`}
+                    >
+                        <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
+                            {opt.icon}
+                        </div>
+                        <div>
+                            <div className="font-bold text-slate-800 dark:text-slate-100">{opt.label}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{subText}</div>
+                        </div>
+                    </button>
+                );
+            })}
+        </div>
       </div>
     </div>
   );
