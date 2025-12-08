@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronDown, MousePointer2, Scan, Trophy, Zap } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronDown, MousePointer2, Scan, Trophy, Zap, Skull, ShieldCheck } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
@@ -21,78 +21,115 @@ interface QuizCardProps {
 interface GameNode {
   id: string;
   text: string;
+  index: number; // The correct order index
   x: number;
   y: number;
   vx: number;
   vy: number;
-  status: 'active' | 'captured' | 'collecting';
+  status: 'active' | 'captured' | 'wrong';
   color: string;
+  rotation: number;
 }
 
-// --- Gamified Memory Engine ---
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: string;
+  size: number;
+}
+
+// --- Neural Reconstruction Engine (V2) ---
 const GamifiedMemoryEngine = ({ centerText, points, onComplete }: { centerText: string, points: string[], onComplete: () => void }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [nodes, setNodes] = useState<GameNode[]>([]);
-    const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory'>('intro');
-    const [score, setScore] = useState(0);
+    const [particles, setParticles] = useState<Particle[]>([]);
+    const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'failed'>('intro');
+    const [nextIndex, setNextIndex] = useState(0); // Which index we are looking for (0, 1, 2...)
     const [combo, setCombo] = useState(0);
-    const requestRef = useRef<number>(0);
+    const [systemStability, setSystemStability] = useState(100);
+    const [glitchActive, setGlitchActive] = useState(false);
     
-    // Colors for the cyberpunk theme
-    const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899'];
+    const requestRef = useRef<number>(0);
+    const particleIdCounter = useRef(0);
+
+    // Neon Cyberpunk Palette
+    const colors = ['#00f3ff', '#bc13fe', '#ff003c', '#e2ff00', '#00ff9f'];
 
     // Initialize Game
     useEffect(() => {
         if (points.length === 0) return;
         
+        // Randomize initial positions but keep index for logic
         const initialNodes: GameNode[] = points.map((text, i) => ({
             id: `node-${i}`,
             text,
+            index: i,
             x: Math.random() * 60 + 20, // 20-80%
-            y: Math.random() * 60 + 20, // 20-80%
-            vx: (Math.random() - 0.5) * 0.4, // Random velocity
-            vy: (Math.random() - 0.5) * 0.4,
+            y: Math.random() * 60 + 20,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
             status: 'active',
-            color: colors[i % colors.length]
+            color: colors[i % colors.length],
+            rotation: Math.random() * 10 - 5
         }));
         setNodes(initialNodes);
         
-        // Start intro animation sequence
-        const timer = setTimeout(() => setGameStatus('playing'), 1500);
+        const timer = setTimeout(() => setGameStatus('playing'), 2000);
         return () => clearTimeout(timer);
     }, [points]);
 
+    // Spawn Particles Explosion
+    const spawnParticles = (x: number, y: number, color: string, amount: number = 20) => {
+        const newParticles: Particle[] = [];
+        for (let i = 0; i < amount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 5 + 2;
+            newParticles.push({
+                id: particleIdCounter.current++,
+                x,
+                y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 1.0,
+                color,
+                size: Math.random() * 4 + 1
+            });
+        }
+        setParticles(prev => [...prev, ...newParticles]);
+    };
+
     // Physics Loop
     const updatePhysics = () => {
+        // 1. Update Nodes
         setNodes(prevNodes => prevNodes.map(node => {
             if (node.status === 'captured') return node;
 
             let { x, y, vx, vy } = node;
 
-            if (node.status === 'collecting') {
-                // Fly to center (50, 50)
-                const dx = 50 - x;
-                const dy = 50 - y;
-                x += dx * 0.15;
-                y += dy * 0.15;
-                
-                // If close enough, mark captured
-                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
-                    return { ...node, status: 'captured', x: 50, y: 50 };
-                }
-                return { ...node, x, y };
-            }
-
-            // Normal floating physics
+            // Physics
             x += vx;
             y += vy;
-
             // Wall bounce
-            if (x <= 10 || x >= 90) vx *= -1;
-            if (y <= 10 || y >= 90) vy *= -1;
+            if (x <= 5 || x >= 95) vx *= -1;
+            if (y <= 10 || y >= 85) vy *= -1; // Keep some space at bottom for HUD
 
             return { ...node, x, y, vx, vy };
         }));
+
+        // 2. Update Particles
+        setParticles(prevParts => prevParts
+            .map(p => ({
+                ...p,
+                x: p.x + p.vx * 0.1, // Scale speed for DOM pixels roughly
+                y: p.y + p.vy * 0.1,
+                life: p.life - 0.02
+            }))
+            .filter(p => p.life > 0)
+        );
 
         requestRef.current = requestAnimationFrame(updatePhysics);
     };
@@ -106,156 +143,207 @@ const GamifiedMemoryEngine = ({ centerText, points, onComplete }: { centerText: 
         };
     }, [gameStatus]);
 
-    // Check Win Condition
+    // Check Victory
     useEffect(() => {
         if (nodes.length > 0 && nodes.every(n => n.status === 'captured') && gameStatus !== 'victory') {
             setGameStatus('victory');
-            setTimeout(onComplete, 1000);
+            setTimeout(onComplete, 1500);
         }
     }, [nodes, gameStatus]);
 
-    const handleNodeClick = (id: string) => {
+    const handleNodeClick = (e: React.MouseEvent, node: GameNode) => {
         if (gameStatus !== 'playing') return;
         
-        setNodes(prev => {
-            const node = prev.find(n => n.id === id);
-            if (!node || node.status !== 'active') return prev;
-            
-            // Trigger haptic/sound effect logic here
-            setScore(s => s + 100 + (combo * 10));
-            setCombo(c => c + 1);
-            
-            return prev.map(n => n.id === id ? { ...n, status: 'collecting' } : n);
-        });
+        // Rect for particle spawn position relative to container
+        const rect = containerRef.current?.getBoundingClientRect();
+        const clickX = rect ? ((e.clientX - rect.left) / rect.width) * 100 : 50;
+        const clickY = rect ? ((e.clientY - rect.top) / rect.height) * 100 : 50;
 
-        // Reset combo if no click for 2 seconds
-        // (Simplified logic for React state)
+        if (node.index === nextIndex) {
+            // --- CORRECT SEQUENCE ---
+            setNodes(prev => prev.map(n => n.id === node.id ? { ...n, status: 'captured' } : n));
+            setNextIndex(prev => prev + 1);
+            setCombo(prev => prev + 1);
+            
+            // Effect
+            spawnParticles(clickX, clickY, '#00f3ff', 30); // Blue explosion
+            
+        } else {
+            // --- WRONG SEQUENCE ---
+            setCombo(0);
+            setSystemStability(prev => Math.max(0, prev - 15));
+            setGlitchActive(true);
+            setTimeout(() => setGlitchActive(false), 500);
+
+            // Effect
+            spawnParticles(clickX, clickY, '#ff003c', 10); // Red explosion
+            
+            // Punishment: Node turns red briefly
+            setNodes(prev => prev.map(n => n.id === node.id ? { ...n, status: 'wrong' } : n));
+            setTimeout(() => {
+                setNodes(prev => prev.map(n => n.id === node.id ? { ...n, status: 'active' } : n));
+            }, 600);
+        }
     };
 
     return (
-        <div ref={containerRef} className="relative w-full h-[400px] bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl group select-none">
+        <div ref={containerRef} className={`relative w-full h-[450px] bg-slate-950 rounded-xl overflow-hidden border-2 shadow-2xl group select-none ${glitchActive ? 'border-red-500 animate-shake' : 'border-slate-800'}`}>
             
-            {/* 1. Background Grid & Effects */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(60deg)_translateY(-100px)_scale(1.5)] opacity-50 pointer-events-none" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,rgba(2,6,23,1)_80%)] pointer-events-none" />
-            
-            {/* CRT Scanline Effect */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[size:100%_2px,3px_100%] pointer-events-none z-20" />
+            {/* 0. Glitch Overlay */}
+            {glitchActive && (
+                <div className="absolute inset-0 bg-red-500/20 z-50 pointer-events-none mix-blend-overlay animate-pulse" />
+            )}
 
+            {/* 1. Background Grid (Moving) */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:50px_50px] [transform:perspective(500px)_rotateX(60deg)_translateY(-100px)_scale(2)] opacity-60 pointer-events-none" />
+            
             {/* 2. HUD Interface */}
-            <div className="absolute top-4 left-4 z-10 font-mono text-xs">
-                <div className="flex items-center gap-2 text-cyan-400 mb-1">
-                    <Scan className="w-4 h-4 animate-pulse" />
-                    <span>NEURAL_LINK: {gameStatus === 'playing' ? 'ACTIVE' : gameStatus.toUpperCase()}</span>
-                </div>
-                <div className="text-slate-500">TARGETS: {nodes.filter(n => n.status === 'captured').length}/{nodes.length}</div>
-            </div>
-
-            <div className="absolute top-4 right-4 z-10 font-mono text-right">
-                <div className="text-2xl font-black text-yellow-400 tabular-nums tracking-tighter drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]">
-                    {score.toString().padStart(6, '0')}
-                </div>
-                {combo > 1 && (
-                    <div className="text-xs font-bold text-orange-500 animate-bounce">
-                        {combo}x COMBO!
+            <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start pointer-events-none">
+                <div className="font-mono text-xs">
+                    <div className="flex items-center gap-2 text-cyan-400 mb-1">
+                        <Scan className="w-4 h-4 animate-spin-slow" />
+                        <span>NEURAL_LINK: {gameStatus === 'playing' ? 'SYNCING...' : gameStatus.toUpperCase()}</span>
                     </div>
-                )}
-            </div>
-
-            {/* 3. The Central Core (Question) */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 z-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <div className={`relative transition-all duration-500 ${gameStatus === 'victory' ? 'scale-125' : 'scale-100'}`}>
-                    <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
-                    <div className="relative bg-slate-900/80 backdrop-blur-md border border-blue-500/50 p-4 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-                        <BrainCircuit className={`w-12 h-12 text-blue-400 ${gameStatus === 'playing' ? 'animate-pulse' : ''}`} />
+                    <div className="text-slate-500 flex gap-1 items-center">
+                        SEQUENCE: 
+                        <span className="text-white font-bold">{nextIndex}</span>
+                        <span className="text-slate-600">/</span>
+                        <span className="text-slate-600">{nodes.length}</span>
                     </div>
                 </div>
-                {/* Connecting Beams */}
-                {nodes.filter(n => n.status === 'captured').map(n => (
-                    <div key={`beam-${n.id}`} className="absolute top-1/2 left-1/2 w-[200px] h-[2px] bg-gradient-to-r from-blue-500 to-transparent origin-left animate-pulse" 
-                        style={{ 
-                            transform: `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`,
-                            opacity: 0.5
-                        }} 
-                    />
-                ))}
-            </div>
-
-            {/* 4. Game Nodes (The Keywords) */}
-            {gameStatus !== 'intro' && nodes.map((node) => {
-                if (node.status === 'captured') return null; // Don't render captured nodes floating
                 
+                <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-2">
+                         <div className="h-1.5 w-24 bg-slate-800 rounded-full overflow-hidden">
+                             <div 
+                                className={`h-full transition-all duration-300 ${systemStability > 50 ? 'bg-cyan-400' : 'bg-red-500'}`} 
+                                style={{ width: `${systemStability}%` }} 
+                             />
+                         </div>
+                         <span className={`text-[10px] font-mono font-bold ${systemStability > 50 ? 'text-cyan-400' : 'text-red-500'}`}>{systemStability}%</span>
+                    </div>
+                    {combo > 1 && (
+                        <div className="text-xl font-black italic text-yellow-400 mt-1 animate-bounce drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]">
+                            {combo}x CHAIN
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 3. Central Core (Hint / Decor) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-20 pointer-events-none">
+                <div className={`w-64 h-64 border border-cyan-500/30 rounded-full flex items-center justify-center ${gameStatus === 'playing' ? 'animate-[spin_10s_linear_infinite]' : ''}`}>
+                    <div className="w-48 h-48 border border-purple-500/30 rounded-full" />
+                </div>
+            </div>
+
+            {/* 4. Game Nodes (Shards) */}
+            {gameStatus !== 'intro' && nodes.map((node) => {
+                if (node.status === 'captured') return null;
+                
+                const isTarget = node.index === nextIndex;
+                const isWrong = node.status === 'wrong';
+
                 return (
                     <button
                         key={node.id}
-                        onClick={() => handleNodeClick(node.id)}
-                        className={`absolute -translate-x-1/2 -translate-y-1/2 group transition-transform active:scale-95 ${node.status === 'collecting' ? 'duration-500 ease-in' : 'duration-0'}`}
+                        onMouseDown={(e) => handleNodeClick(e, node)}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 z-10 focus:outline-none touch-manipulation"
                         style={{
                             left: `${node.x}%`,
                             top: `${node.y}%`,
-                            zIndex: 10
                         }}
                     >
-                        {/* The Node Appearance */}
+                        {/* Hexagon Shard */}
                         <div 
-                            className="relative px-4 py-2 bg-slate-900/90 backdrop-blur-xl border-2 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center gap-2 overflow-hidden hover:scale-105 transition-all"
-                            style={{ 
-                                borderColor: node.color,
-                                boxShadow: `0 0 20px ${node.color}40`
+                            className={`
+                                relative px-5 py-3 clip-hex transition-all duration-200
+                                ${isWrong ? 'bg-red-600 animate-shake scale-110' : 'bg-slate-900/90 hover:bg-slate-800'}
+                                ${isTarget && !isWrong ? 'shadow-[0_0_15px_rgba(34,211,238,0.4)] border-cyan-400/50' : ''}
+                            `}
+                            style={{
+                                transform: `rotate(${node.rotation}deg)`,
+                                borderLeft: `3px solid ${isWrong ? '#ff003c' : node.color}` 
                             }}
                         >
-                            {/* Scanning Line Animation */}
-                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />
+                            {/* Scanning Line */}
+                            {!isWrong && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />}
                             
-                            <div className="w-2 h-2 rounded-full animate-ping absolute left-2" style={{ backgroundColor: node.color }} />
-                            <span className="relative z-10 text-sm font-bold text-white tracking-wide pl-2" style={{ textShadow: `0 0 10px ${node.color}` }}>
+                            <span className={`relative z-10 text-xs font-bold tracking-wide pointer-events-none ${isWrong ? 'text-white' : 'text-slate-200'}`} style={{ textShadow: '0 1px 2px black' }}>
                                 {node.text}
                             </span>
                         </div>
                         
-                        {/* Target Reticle Effect */}
-                        <div className="absolute inset-0 -m-2 border border-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity scale-110 group-hover:scale-100 duration-300 pointer-events-none">
-                            <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white" />
-                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white" />
-                        </div>
+                        {/* Target Hint (Optional, subtle pulse if it's the next one) */}
+                        {isTarget && !isWrong && (
+                             <div className="absolute inset-0 -m-4 border border-cyan-400/20 rounded-full animate-ping pointer-events-none" />
+                        )}
                     </button>
                 );
             })}
 
-            {/* 5. Intro Overlay */}
-            {gameStatus === 'intro' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm z-50">
-                    <div className="text-center animate-in zoom-in duration-500">
-                        <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 mb-2">
-                            SYSTEM LINK
-                        </div>
-                        <div className="text-sm text-cyan-500 font-mono animate-pulse">
-                            INITIALIZING MEMORY PROTOCOLS...
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* 5. Particle Layer */}
+            {particles.map(p => (
+                <div 
+                    key={p.id}
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                        left: `${p.x}%`,
+                        top: `${p.y}%`,
+                        width: `${p.size}px`,
+                        height: `${p.size}px`,
+                        backgroundColor: p.color,
+                        opacity: p.life,
+                        transform: 'translate(-50%, -50%)',
+                        boxShadow: `0 0 ${p.size * 2}px ${p.color}`
+                    }}
+                />
+            ))}
 
-            {/* 6. Victory Overlay */}
-            {gameStatus === 'victory' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-50 pointer-events-none">
-                    <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_0_20px_rgba(234,179,8,0.8)] animate-in zoom-in duration-300 scale-150">
-                        100%
+            {/* 6. Bottom Logic Timeline */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-slate-900/95 border-t border-slate-800 z-30 flex items-center px-4 gap-2 overflow-x-auto">
+                 <div className="text-[10px] font-mono text-slate-500 shrink-0 mr-2 flex flex-col items-center">
+                    <ShieldCheck className="w-4 h-4 text-slate-600" />
+                    <span>LOGIC</span>
+                 </div>
+                 {nodes.filter(n => n.status === 'captured').sort((a,b) => a.index - b.index).map((n, i) => (
+                     <React.Fragment key={n.id}>
+                         <div className="bg-cyan-900/30 border border-cyan-500/30 text-cyan-100 px-3 py-1.5 rounded text-[10px] font-mono whitespace-nowrap animate-pop clip-hex">
+                             {n.text}
+                         </div>
+                         <ArrowRight className="w-3 h-3 text-slate-700 shrink-0" />
+                     </React.Fragment>
+                 ))}
+                 <div className="w-4 h-4 border border-slate-700 border-dashed rounded-full animate-pulse shrink-0" />
+            </div>
+
+            {/* 7. Intro Overlay */}
+            {gameStatus === 'intro' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 z-50 backdrop-blur-sm">
+                    <BrainCircuit className="w-16 h-16 text-cyan-500 mb-4 animate-pulse" />
+                    <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-600 mb-2 tracking-tighter">
+                        NEURAL RECONSTRUCTION
                     </div>
-                    <div className="text-yellow-100 font-bold tracking-[0.5em] text-sm mt-2 animate-in slide-in-from-bottom-4 fade-in duration-700">
-                        SYNCHRONIZED
+                    <div className="bg-red-500/10 border border-red-500/50 px-4 py-2 rounded text-red-400 text-xs font-mono mb-4 animate-bounce">
+                        ⚠ WARNING: SEQUENCE REQUIRED
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                        Tap keywords in the CORRECT LOGICAL ORDER.
                     </div>
                 </div>
             )}
             
-            {/* Captured List (HUD Bottom) */}
-            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 justify-center pointer-events-none">
-                 {nodes.filter(n => n.status === 'captured').map(n => (
-                     <div key={n.id} className="bg-slate-900/80 border border-slate-700 text-slate-300 px-2 py-1 rounded text-[10px] font-mono animate-in slide-in-from-bottom-2 fade-in">
-                         {n.text}
-                     </div>
-                 ))}
-            </div>
+            {/* 8. Victory Overlay */}
+            {gameStatus === 'victory' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-50 pointer-events-none bg-cyan-900/20 backdrop-blur-[2px]">
+                    <div className="text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-in zoom-in duration-300">
+                        SYNC
+                    </div>
+                    <div className="text-cyan-200 font-mono tracking-[0.5em] text-sm mt-2 animate-in slide-in-from-bottom-4 fade-in duration-700">
+                        COMPLETE
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -474,14 +562,14 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                              <MousePointer2 className="w-12 h-12 text-indigo-500 relative z-10" />
                          </div>
                          <div className="space-y-2">
-                             <p className="text-slate-500 dark:text-slate-400 font-bold">准备好开始记忆了吗？</p>
-                             <p className="text-slate-400 dark:text-slate-500 text-xs">点击下方按钮启动神经连结</p>
+                             <p className="text-slate-500 dark:text-slate-400 font-bold">准备好重建记忆了吗？</p>
+                             <p className="text-slate-400 dark:text-slate-500 text-xs">点击启动神经重构协议</p>
                          </div>
                          <button 
                             onClick={() => setEssayRevealed(true)}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none active:scale-95 transition-all flex items-center gap-2 mt-4"
                          >
-                            <Zap className="w-5 h-5" /> 启动记忆引擎
+                            <Zap className="w-5 h-5" /> 启动重构引擎
                          </button>
                      </div>
                  ) : (
@@ -489,15 +577,16 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                          {/* Gamified Memory Engine */}
                          <div className="w-full">
                              <h3 className="text-xs font-bold text-indigo-500 dark:text-cyan-500 uppercase tracking-wider flex items-center gap-1.5 mb-3 px-1">
-                                <Trophy className="w-4 h-4 animate-bounce" /> 神经连结协议 (Neural Link Protocol)
+                                <Trophy className="w-4 h-4 animate-bounce" /> 神经连结协议 V2.0 (Neural Link)
                             </h3>
                              <GamifiedMemoryEngine 
                                 centerText={question.content}
                                 points={question.keyPoints || []}
                                 onComplete={() => {}}
                              />
-                             <div className="text-center text-[10px] text-slate-400 mt-2">
-                                 点击浮动的关键词来收集它们！
+                             <div className="text-center text-[10px] text-slate-400 mt-2 flex items-center justify-center gap-1">
+                                 <Skull className="w-3 h-3 text-red-500" />
+                                 <span>警告：必须按逻辑顺序点击关键词，错误将导致系统不稳定。</span>
                              </div>
                          </div>
                          
