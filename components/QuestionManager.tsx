@@ -1,7 +1,8 @@
 
+
 import React, { useState } from 'react';
 import { Question, QuestionType } from '../types';
-import { Plus, Trash2, Save, Pencil, X, Wand2, Check, CheckSquare } from 'lucide-react';
+import { Plus, Trash2, Save, Pencil, X, Wand2, Check, CheckSquare, Sparkles } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface QuestionManagerProps {
@@ -21,6 +22,7 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswerChoice, setCorrectAnswerChoice] = useState<string[]>([]);
   const [correctAnswerJudge, setCorrectAnswerJudge] = useState<string>(''); 
+  const [correctAnswerText, setCorrectAnswerText] = useState(''); // For Essay
   const [mnemonic, setMnemonic] = useState('');
   const [analysis, setAnalysis] = useState('');
   const [importText, setImportText] = useState('');
@@ -31,6 +33,7 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
     setOptions(['', '', '', '']);
     setCorrectAnswerChoice([]);
     setCorrectAnswerJudge('');
+    setCorrectAnswerText('');
     setMnemonic('');
     setAnalysis('');
     setEditingId(null);
@@ -51,6 +54,8 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
       setCorrectAnswerChoice(Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer as string]);
     } else if (q.type === QuestionType.JUDGE) {
       setCorrectAnswerJudge(String(q.correctAnswer));
+    } else if (q.type === QuestionType.ESSAY) {
+      setCorrectAnswerText(String(q.correctAnswer));
     }
     setActiveView('editor');
   };
@@ -59,12 +64,17 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
     if (!content) return;
     if (type === QuestionType.CHOICE && correctAnswerChoice.length === 0) return;
     if (type === QuestionType.JUDGE && !correctAnswerJudge) return;
+    if (type === QuestionType.ESSAY && !correctAnswerText) return;
 
     const questionData: Question = {
       id: editingId || Date.now().toString(),
       type,
       content,
-      correctAnswer: type === QuestionType.JUDGE ? (correctAnswerJudge === 'true') : correctAnswerChoice,
+      correctAnswer: type === QuestionType.JUDGE 
+          ? (correctAnswerJudge === 'true') 
+          : type === QuestionType.ESSAY
+            ? correctAnswerText
+            : correctAnswerChoice,
       mnemonic: mnemonic || undefined,
       analysis: analysis || undefined,
       options: type === QuestionType.CHOICE ? options.filter(o => o) : undefined,
@@ -167,8 +177,12 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
                     <div className="flex-1 pr-16"> 
                         <div className="flex gap-2 mb-2">
                             <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">{idx + 1}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${q.type === QuestionType.JUDGE ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'}`}>
-                                {q.type === QuestionType.JUDGE ? '判断' : '选择'}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                q.type === QuestionType.JUDGE ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 
+                                q.type === QuestionType.ESSAY ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' :
+                                'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                            }`}>
+                                {q.type === QuestionType.JUDGE ? '判断' : q.type === QuestionType.ESSAY ? '简答' : '选择'}
                             </span>
                         </div>
                         <p className="text-sm font-medium text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed">{q.content}</p>
@@ -187,14 +201,18 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
             <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-5 shadow-sm">
                 <div>
                     <label className="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">题目类型</label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
                         <label className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${type === QuestionType.CHOICE ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' : 'border-slate-100 dark:border-slate-800'}`}>
                             <input type="radio" checked={type === QuestionType.CHOICE} onChange={() => setType(QuestionType.CHOICE)} className="hidden" />
-                            <span className="text-sm font-bold">选择题 (不定项)</span>
+                            <span className="text-xs font-bold">选择</span>
                         </label>
                         <label className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${type === QuestionType.JUDGE ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400' : 'border-slate-100 dark:border-slate-800'}`}>
                             <input type="radio" checked={type === QuestionType.JUDGE} onChange={() => setType(QuestionType.JUDGE)} className="hidden" />
-                            <span className="text-sm font-bold">判断题</span>
+                            <span className="text-xs font-bold">判断</span>
+                        </label>
+                        <label className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${type === QuestionType.ESSAY ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400' : 'border-slate-100 dark:border-slate-800'}`}>
+                            <input type="radio" checked={type === QuestionType.ESSAY} onChange={() => setType(QuestionType.ESSAY)} className="hidden" />
+                            <span className="text-xs font-bold">简答</span>
                         </label>
                     </div>
                 </div>
@@ -227,6 +245,12 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
                          </div>
                     </div>
                 )}
+                {type === QuestionType.ESSAY && (
+                     <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">参考答案</label>
+                        <textarea value={correctAnswerText} onChange={(e) => setCorrectAnswerText(e.target.value)} className="w-full p-3 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-indigo-900 dark:text-indigo-200 placeholder-indigo-300/50" placeholder="输入完整的参考答案..." rows={6} />
+                     </div>
+                )}
                 <div>
                     <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">深度辨析/解析</label>
                     <textarea value={analysis} onChange={(e) => setAnalysis(e.target.value)} className="w-full p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-blue-900 dark:text-blue-200 placeholder-blue-300/50" placeholder="输入详细的理由或辨析..." rows={3} />
@@ -235,7 +259,7 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
                     <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">助记 (选填)</label>
                     <input value={mnemonic} onChange={(e) => setMnemonic(e.target.value)} className="w-full p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-amber-900 dark:text-amber-400 placeholder-amber-300/50" placeholder="输入顺口溜..." />
                 </div>
-                <button onClick={handleSave} disabled={!content || (type === QuestionType.CHOICE ? correctAnswerChoice.length === 0 : !correctAnswerJudge)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"><Save className="w-5 h-5" /> {editingId ? '保存修改' : '确认添加'}</button>
+                <button onClick={handleSave} disabled={!content || (type === QuestionType.CHOICE ? correctAnswerChoice.length === 0 : (type === QuestionType.JUDGE ? !correctAnswerJudge : !correctAnswerText))} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"><Save className="w-5 h-5" /> {editingId ? '保存修改' : '确认添加'}</button>
             </div>
         </div>
       )}

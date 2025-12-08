@@ -46,6 +46,11 @@ const App: React.FC = () => {
                 return false; // Strict mode for ranges: only numbered questions
              });
         }
+
+        // Filter by Type (Strict Separation between Essay/Choice/Judge if requested)
+        if (subDeckConfig.questionType) {
+            qs = qs.filter(q => q.type === subDeckConfig.questionType);
+        }
     }
     return qs;
   }, [allQuestions, selectedCategory, subDeckConfig]);
@@ -93,13 +98,18 @@ const App: React.FC = () => {
            
            if (selectedCategory === '中特' && subDeckConfig) {
                 if (subDeckConfig.type === 'tag' && subDeckConfig.tag) {
-                    return q.tags?.includes(subDeckConfig.tag!);
+                    if (!q.tags?.includes(subDeckConfig.tag!)) return false;
                 } else if (subDeckConfig.type === 'range') {
                     const match = q.id.match(/^zhongte_(\d+)$/);
                     if (match) {
                         const num = parseInt(match[1]);
-                        return num >= subDeckConfig.min! && num <= subDeckConfig.max!;
+                        if (!(num >= subDeckConfig.min! && num <= subDeckConfig.max!)) return false;
+                    } else {
+                        return false;
                     }
+                }
+                // Apply type filter to mistakes too
+                if (subDeckConfig.questionType && q.type !== subDeckConfig.questionType) {
                     return false;
                 }
            }
