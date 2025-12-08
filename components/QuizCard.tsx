@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronUp, ChevronDown, Move3d, Target, Eye } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, Flame, AlertOctagon, RotateCcw, BookOpen, AlertTriangle, Pin, PinOff, CheckSquare, Search, ChevronDown, Move3d, Target, Eye, Atom, ScanLine } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
@@ -17,54 +17,94 @@ interface QuizCardProps {
   isMistakeMode?: boolean;
 }
 
-// --- 3D Mind Map Component ---
-const ParticleMindMap3D = ({ centerText, points }: { centerText: string, points: string[] }) => {
-    const [rotation, setRotation] = useState({ x: -10, y: 0 });
+// --- Holographic Universe Component ---
+const HolographicUniverse = ({ centerText, points }: { centerText: string, points: string[] }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    
+    // Physics State
+    const [rotation, setRotation] = useState({ x: 0, y: 0 });
     const isDragging = useRef(false);
     const lastMouse = useRef({ x: 0, y: 0 });
-    const containerRef = useRef<HTMLDivElement>(null);
-    const autoRotateSpeed = useRef(0.2);
+    const velocity = useRef({ x: 0.2, y: 0.1 }); // Initial auto-rotation
+    const momentumId = useRef<number>(0);
 
+    // Geometry Calculation
+    const nodePositions = useMemo(() => {
+        return points.map((_, i) => {
+            const count = points.length;
+            const phi = Math.acos(1 - 2 * (i + 0.5) / count);
+            const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
+            const radius = 140; // Reduced slightly to fit connecting lines
+            return {
+                x: radius * Math.sin(phi) * Math.cos(theta),
+                y: radius * Math.sin(phi) * Math.sin(theta),
+                z: radius * Math.cos(phi),
+                id: i
+            };
+        });
+    }, [points]);
+
+    // Input Handlers
     const handleStart = (clientX: number, clientY: number) => {
         isDragging.current = true;
         lastMouse.current = { x: clientX, y: clientY };
-        autoRotateSpeed.current = 0; // Stop auto rotate while interacting
+        velocity.current = { x: 0, y: 0 }; // Stop auto-rotation on grab
     };
 
     const handleMove = (clientX: number, clientY: number) => {
         if (!isDragging.current) return;
+        
         const deltaX = clientX - lastMouse.current.x;
         const deltaY = clientY - lastMouse.current.y;
         
+        // Update rotation immediately for responsiveness
+        const sensitivity = 0.5;
         setRotation(prev => ({
-            x: Math.max(-60, Math.min(60, prev.x - deltaY * 0.5)),
-            y: prev.y + deltaX * 0.5
+            x: prev.x - deltaY * sensitivity,
+            y: prev.y + deltaX * sensitivity
         }));
-        
+
+        // Calculate velocity for inertia
+        velocity.current = {
+            x: -deltaY * sensitivity,
+            y: deltaX * sensitivity
+        };
+
         lastMouse.current = { x: clientX, y: clientY };
     };
 
     const handleEnd = () => {
         isDragging.current = false;
-        autoRotateSpeed.current = 0.2; // Resume auto rotate
     };
 
+    // Physics Loop (Inertia & Auto-rotation)
     useEffect(() => {
-        let animationFrame: number;
-        const animate = () => {
+        const loop = () => {
             if (!isDragging.current) {
-                setRotation(prev => ({ ...prev, y: prev.y + autoRotateSpeed.current }));
+                // Apply friction
+                velocity.current.x *= 0.95;
+                velocity.current.y *= 0.95;
+
+                // Minimum auto-rotate speed to keep it alive
+                if (Math.abs(velocity.current.y) < 0.02 && Math.abs(velocity.current.x) < 0.02) {
+                     velocity.current.y = 0.05; 
+                }
+
+                setRotation(prev => ({
+                    x: prev.x + velocity.current.x,
+                    y: prev.y + velocity.current.y
+                }));
             }
-            animationFrame = requestAnimationFrame(animate);
+            momentumId.current = requestAnimationFrame(loop);
         };
-        animationFrame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationFrame);
+        momentumId.current = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(momentumId.current);
     }, []);
 
     return (
         <div 
             ref={containerRef}
-            className="h-[360px] w-full relative overflow-hidden rounded-3xl bg-slate-950 perspective-1000 cursor-grab active:cursor-grabbing touch-none shadow-2xl border border-slate-800"
+            className="h-[400px] w-full relative overflow-hidden rounded-3xl bg-slate-950 perspective-1000 cursor-grab active:cursor-grabbing touch-none shadow-2xl border border-slate-800 ring-1 ring-white/10 group"
             onMouseDown={e => handleStart(e.clientX, e.clientY)}
             onMouseMove={e => handleMove(e.clientX, e.clientY)}
             onMouseUp={handleEnd}
@@ -73,80 +113,133 @@ const ParticleMindMap3D = ({ centerText, points }: { centerText: string, points:
             onTouchMove={e => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
             onTouchEnd={handleEnd}
         >
-            {/* Background Particles (Galaxy Effect) */}
+            {/* 1. Dynamic Background Field */}
             <div className="absolute inset-0 pointer-events-none">
-                {[...Array(30)].map((_, i) => (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15)_0%,rgba(15,23,42,1)_70%)]" />
+                {/* Floating Stars */}
+                {[...Array(20)].map((_, i) => (
                     <div 
                         key={i}
-                        className="absolute rounded-full bg-indigo-500/20 blur-[1px] animate-pulse"
+                        className="absolute rounded-full bg-white animate-pulse"
                         style={{
-                            width: Math.random() * 4 + 2 + 'px',
-                            height: Math.random() * 4 + 2 + 'px',
+                            width: Math.random() * 2 + 1 + 'px',
+                            height: Math.random() * 2 + 1 + 'px',
                             left: Math.random() * 100 + '%',
                             top: Math.random() * 100 + '%',
-                            animationDuration: Math.random() * 4 + 2 + 's',
-                            opacity: Math.random() * 0.5 + 0.2
+                            opacity: Math.random() * 0.5 + 0.1,
+                            animationDuration: Math.random() * 3 + 2 + 's'
                         }}
                     />
                 ))}
             </div>
 
-            {/* 3D World */}
+            {/* 2. HUD Elements */}
+            <div className="absolute top-4 left-4 text-[10px] font-mono text-cyan-500/60 pointer-events-none flex items-center gap-2">
+                <ScanLine className="w-3 h-3 animate-pulse" />
+                <span>NEURAL_CORE_ACTIVE</span>
+            </div>
+            <div className="absolute bottom-4 left-4 text-[10px] font-mono text-cyan-500/60 pointer-events-none border border-cyan-500/20 px-2 py-1 rounded">
+                ROT: X{rotation.x.toFixed(0)} Y{rotation.y.toFixed(0)}
+            </div>
+
+            {/* 3. The 3D Universe */}
             <div 
-                className="w-full h-full flex items-center justify-center preserve-3d transition-transform duration-75 ease-linear"
+                className="w-full h-full flex items-center justify-center preserve-3d"
                 style={{ 
                     transformStyle: 'preserve-3d',
                     transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
                 }}
             >
-                {/* Central Core (Sun) */}
-                <div className="absolute w-28 h-28 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-full flex items-center justify-center text-center p-3 shadow-[0_0_50px_rgba(79,70,229,0.6)] z-20 border-2 border-white/20 select-none animate-pulse">
-                    <span className="text-[10px] font-black text-white leading-tight drop-shadow-md line-clamp-3">
-                        {centerText}
-                    </span>
-                </div>
-
-                {/* Orbiting Points (Planets) */}
-                {points.map((point, i) => {
-                    const count = points.length;
-                    // Fibonacci Sphere distribution for even spread
-                    const phi = Math.acos(1 - 2 * (i + 0.5) / count);
-                    const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
-                    const radius = 130; 
-
-                    const x = radius * Math.sin(phi) * Math.cos(theta);
-                    const y = radius * Math.sin(phi) * Math.sin(theta);
-                    const z = radius * Math.cos(phi);
-
+                {/* Connecting Lines Layer (SVG in 3D space is tricky, using thin divs) */}
+                {nodePositions.map((pos, i) => {
+                    // Calculate distance for line length
+                    const dist = Math.sqrt(pos.x**2 + pos.y**2 + pos.z**2);
+                    // Calculate angles for the line to point to center
+                    // We render a line from center to point
+                    // This uses a transform trick: translate half distance, then rotate to face point
+                    // Actually, simpler CSS 3D approach:
+                    // Just render the line inside the node container, pointing back to 0,0,0?
+                    // No, easier to render a div from 0,0,0 to the point.
+                    
+                    // Simplifying: We will draw lines using a specific transform on the Node itself
+                    // The "Beam"
                     return (
-                        <div
-                            key={i}
-                            className="absolute flex items-center justify-center preserve-3d group"
+                        <div 
+                            key={`beam-${i}`}
+                            className="absolute top-1/2 left-1/2 origin-left bg-gradient-to-r from-cyan-500/0 via-cyan-500/50 to-blue-500/0"
                             style={{
-                                transform: `translate3d(${x}px, ${y}px, ${z}px)`
+                                width: dist + 'px',
+                                height: '1px',
+                                transform: `translate3d(-50%, -50%, 0) rotate3d(${pos.y}, ${-pos.x}, 0, ${Math.acos(pos.z/dist)}rad) rotateY(90deg)`, // This math is complex to perfect in pure CSS without a library.
+                                // Fallback visual: Just a glowing orb at the center and nodes.
+                                // Let's try a different connection visual:
                             }}
-                        >
-                            {/* Node Card - Counter rotate to face viewer */}
-                            <div 
-                                className="bg-white/10 backdrop-blur-md border border-white/20 p-2.5 rounded-xl shadow-[0_0_15px_rgba(255,255,255,0.1)] w-28 text-[9px] font-bold text-white select-none pointer-events-none transition-all duration-300 group-hover:scale-110 group-hover:bg-white/20 group-hover:border-indigo-400"
-                                style={{
-                                    transform: `rotateY(${-rotation.y}deg) rotateX(${-rotation.x}deg)`
-                                }}
-                            >
-                                <div className="w-4 h-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center text-[8px] mb-1 shadow-sm font-mono mx-auto">
-                                    {i + 1}
-                                </div>
-                                <div className="text-center leading-tight drop-shadow-sm">{point}</div>
-                            </div>
-                        </div>
+                        />
                     );
                 })}
+                
+                {/* Central Core (The Brain) */}
+                <div className="absolute preserve-3d animate-pulse">
+                     {/* Outer Glow Ring */}
+                    <div className="absolute inset-0 -m-8 rounded-full border border-cyan-500/30 w-32 h-32 animate-[spin_10s_linear_infinite]" />
+                    <div className="absolute inset-0 -m-6 rounded-full border border-blue-500/30 w-28 h-28 animate-[spin_15s_linear_infinite_reverse]" />
+                    
+                    {/* The Core Orb */}
+                    <div className="w-16 h-16 rounded-full bg-slate-900 border-2 border-cyan-400 shadow-[0_0_50px_rgba(34,211,238,0.6)] flex items-center justify-center z-20 relative">
+                        <Atom className="w-8 h-8 text-cyan-200 animate-spin-slow" />
+                    </div>
+                </div>
+
+                {/* Nodes */}
+                {nodePositions.map((pos, i) => (
+                    <div
+                        key={i}
+                        className="absolute flex items-center justify-center preserve-3d"
+                        style={{
+                            transform: `translate3d(${pos.x}px, ${pos.y}px, ${pos.z}px)`
+                        }}
+                    >
+                        {/* Connection Line (Visual Hack: A gradient line pointing roughly to center) */}
+                        <div 
+                            className="absolute top-1/2 left-1/2 w-[140px] h-[1px] bg-gradient-to-l from-cyan-500/50 to-transparent origin-right"
+                            style={{
+                                transform: `translate(-100%, -50%) rotateY(${90}deg) rotateX(${0}deg)`, // Simplified connection
+                                width: '140px',
+                                right: '50%'
+                            }}
+                        />
+
+                        {/* The Node Card - Billboard Effect (Always face user) */}
+                        <div 
+                            className="relative group/node"
+                            style={{
+                                transform: `rotateY(${-rotation.y}deg) rotateX(${-rotation.x}deg)`
+                            }}
+                        >
+                            <div className="relative bg-slate-900/80 backdrop-blur-md border border-cyan-500/30 p-3 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.15)] w-32 transition-all duration-300 group-hover/node:scale-110 group-hover/node:bg-slate-800/90 group-hover/node:border-cyan-400 group-hover/node:shadow-[0_0_30px_rgba(6,182,212,0.4)]">
+                                {/* Decorators */}
+                                <div className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-cyan-500" />
+                                <div className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-cyan-500" />
+                                
+                                <div className="flex items-center gap-2 mb-1 border-b border-white/10 pb-1">
+                                    <div className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-[8px] font-mono border border-cyan-500/50">
+                                        {i + 1}
+                                    </div>
+                                    <div className="h-0.5 flex-1 bg-gradient-to-r from-cyan-500/50 to-transparent" />
+                                </div>
+                                <div className="text-[10px] font-bold text-cyan-100 leading-tight drop-shadow-md text-center">
+                                    {points[i]}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
             
-            {/* Controls Overlay */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] text-indigo-200/80 font-mono bg-indigo-950/50 px-3 py-1.5 rounded-full border border-indigo-500/30 pointer-events-none backdrop-blur-sm">
+            {/* Control Hint */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-2 text-[10px] text-cyan-300/80 font-mono bg-slate-900/60 px-3 py-1.5 rounded-full border border-cyan-500/30 pointer-events-none backdrop-blur-sm shadow-[0_0_15px_rgba(6,182,212,0.2)]">
                 <Move3d className="w-3 h-3 animate-spin-slow" />
-                <span>Drag to Rotate</span>
+                <span>DRAG TO ROTATE 360°</span>
             </div>
         </div>
     );
@@ -377,12 +470,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                      </div>
                  ) : (
                      <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-500">
-                         {/* 3D Mind Map */}
+                         {/* Holographic Universe Map */}
                          <div className="w-full">
-                             <h3 className="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-3 px-1">
-                                <Target className="w-4 h-4" /> 核心考点思维导图 (可拖动)
+                             <h3 className="text-xs font-bold text-indigo-500 dark:text-cyan-500 uppercase tracking-wider flex items-center gap-1.5 mb-3 px-1">
+                                <Atom className="w-4 h-4 animate-spin-slow" /> 全息思维引擎 (Holographic Core)
                             </h3>
-                             <ParticleMindMap3D 
+                             <HolographicUniverse 
                                 centerText={question.content}
                                 points={question.keyPoints || []}
                              />
@@ -467,7 +560,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
           >
               <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center justify-center gap-4 shadow-xl cursor-pointer hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-2">
-                      <ChevronUp className="w-5 h-5 animate-bounce" />
+                      <ChevronDown className="w-5 h-5 animate-bounce rotate-180" />
                       <span className="font-bold text-sm">展开解析 & 答案</span>
                   </div>
                   <div className={`text-xs font-bold px-2.5 py-1 rounded-md ${isCorrectAnswer ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
