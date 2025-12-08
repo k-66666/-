@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, ListChecks, Scale, Infinity as InfinityIcon, ArrowLeft, FileText, Sparkles, BookOpen } from 'lucide-react';
+import { CheckSquare, ListChecks, Scale, Infinity as InfinityIcon, ArrowLeft, FileText, Sparkles, BookOpen, Star, HelpCircle } from 'lucide-react';
 import { Question, UserProgress, QuestionType } from '../types';
 
 export interface SubDeckConfig {
@@ -105,41 +105,9 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
     return { count, round: minAttempts + 1 };
   }
 
-  const rangeOptions = [
-    {
-      label: '单选题 (1-150)',
-      min: 1,
-      max: 150,
-      icon: <CheckSquare className="w-6 h-6 text-blue-500" />,
-      color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-    },
-    {
-      label: '多选题 (151-300)',
-      min: 151,
-      max: 300,
-      icon: <ListChecks className="w-6 h-6 text-purple-500" />,
-      color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
-    },
-    {
-      label: '判断题 (301-450)',
-      min: 301,
-      max: 450,
-      icon: <Scale className="w-6 h-6 text-green-500" />,
-      color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-    },
-    {
-      label: '全部题 (1-450)',
-      min: 1,
-      max: 1000,
-      icon: <InfinityIcon className="w-6 h-6 text-orange-500" />,
-      color: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-    }
-  ];
-
-  // Specific stats
-  const examChoiceStats = getTagStats('2022真题', QuestionType.CHOICE);
-  const examEssayStats = getTagStats('2022真题', QuestionType.ESSAY); 
   const reviewEssayStats = getTagStats('简答复习', QuestionType.ESSAY);
+  const exam2022Stats = getTagStats('2022真题');
+  const exam2021Stats = getTagStats('2021真题');
 
   return (
     <div className="p-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -159,86 +127,122 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
       </div>
       
       <div className="grid gap-3">
-        {/* Real Exam Cards: Split into Choice and Essay */}
-        <div className="grid grid-cols-2 gap-3">
-            {/* Exam Choices */}
-            <button 
-                onClick={() => onSelect({ type: 'tag', tag: '2022真题', label: '期末真题 (A卷) - 选择', questionType: QuestionType.CHOICE })}
-                className="w-full p-4 rounded-2xl border text-left flex flex-col gap-3 transition-all active:scale-95 hover:shadow-md bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 dark:border-opacity-50"
-            >
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
-                    <CheckSquare className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                    <div className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-0.5">2022真题 (选择)</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                        {examChoiceStats.count > 0 ? `${examChoiceStats.count}道` : '暂无题目'}
-                    </div>
-                </div>
-            </button>
-
-            {/* Exam Essays (The 5 questions) */}
-            <button 
-                onClick={() => onSelect({ type: 'tag', tag: '2022真题', label: '期末真题 (A卷) - 简答', questionType: QuestionType.ESSAY })}
-                className="w-full p-4 rounded-2xl border text-left flex flex-col gap-3 transition-all active:scale-95 hover:shadow-md bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 dark:border-opacity-50"
-            >
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
-                    <FileText className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                    <div className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-0.5">2022真题 (简答)</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                        {examEssayStats.count > 0 ? `${examEssayStats.count}道 (A卷)` : '暂无题目'}
-                    </div>
-                </div>
-            </button>
+        
+        <div className="flex items-center gap-2 px-1">
+            <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">历年真题</h3>
         </div>
 
-        {/* Review Essays Section */}
-        <div className="grid grid-cols-1 gap-3">
-             <button 
-                onClick={() => onSelect({ type: 'tag', tag: '简答复习', label: '简答题重点复习', questionType: QuestionType.ESSAY })}
-                className="w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 dark:border-opacity-50"
-            >
-                <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
-                    <Sparkles className="w-6 h-6 text-indigo-500" />
+        {/* 2022 Exam */}
+        <button 
+            onClick={() => onSelect({ type: 'tag', tag: '2022真题', label: '2022真题 ' })}
+            className="w-full p-5 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 shadow-md hover:shadow-lg bg-white dark:bg-slate-900 border-red-100 dark:border-red-900/30 ring-1 ring-red-500/10"
+        >
+            <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center shadow-inner shrink-0 text-red-600 font-bold text-lg">
+                22
+            </div>
+            <div>
+                <div className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                    2022真题 (A卷)
+                    <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">New</span>
                 </div>
-                <div>
-                    <div className="font-bold text-slate-800 dark:text-slate-100">简答题重点复习 (27道)</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                        {reviewEssayStats.count > 0 ? `${reviewEssayStats.count}道 · 关键字速记` : '暂无题目'}
-                    </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                    {exam2022Stats.count > 0 ? `${exam2022Stats.count}道题 · 含选择/材料` : '暂无题目'}
                 </div>
-            </button>
+            </div>
+        </button>
+
+        {/* 2021 Exam */}
+        <button 
+            onClick={() => onSelect({ type: 'tag', tag: '2021真题', label: '2021真题 (A卷)' })}
+            className="w-full p-5 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 shadow-sm hover:shadow-md bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
+        >
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner shrink-0 text-slate-500 font-bold text-lg">
+                21
+            </div>
+            <div>
+                <div className="font-bold text-lg text-slate-900 dark:text-white">
+                    2021真题 (A卷)
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                    {exam2021Stats.count > 0 ? `${exam2021Stats.count}道题 ·简答 ` : '暂无题目'}
+                </div>
+            </div>
+        </button>
+
+        {/* Review Essays */}
+        <button 
+            onClick={() => onSelect({ type: 'tag', tag: '简答复习', label: '简答题重点复习', questionType: QuestionType.ESSAY })}
+            className="w-full p-5 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 shadow-md hover:shadow-lg bg-indigo-600 text-white border-indigo-500 ring-4 ring-indigo-500/20 mt-2"
+        >
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shadow-inner shrink-0">
+                <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+                <div className="font-black text-lg text-white flex items-center gap-2">
+                    简答题重点复习 
+                </div>
+                <div className="text-xs text-indigo-100 font-medium mt-1">
+                    {reviewEssayStats.count > 0 ? `${reviewEssayStats.count}道 · ` : '暂无题目'}
+                </div>
+            </div>
+        </button>
+
+        <div className="h-px bg-slate-100 dark:bg-slate-800 my-4" />
+        
+        <div className="flex items-center gap-2 px-1">
+            <ListChecks className="w-4 h-4 text-slate-400" />
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">章节题库</h3>
         </div>
 
-        <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
+        {/* Question Bank (1-150) */}
+        <button 
+            onClick={() => onSelect({ type: 'range', min: 1, max: 150, label: '单选题库（重点）' })}
+            className="w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+        >
+            <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
+                <CheckSquare className="w-6 h-6 text-blue-500" />
+            </div>
+            <div>
+                <div className="font-bold text-slate-800 dark:text-slate-100">单选题库 (重点)</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    {getDeckStats(1, 150).count}道题 · 
+                </div>
+            </div>
+        </button>
 
-        {/* Standard Ranges */}
-        <div className="grid gap-3">
-            {rangeOptions.map((opt, idx) => {
-                const stats = getDeckStats(opt.min, opt.max);
-                const subText = stats.count > 0 
-                    ? `${stats.count}道题 · 第${stats.round}遍刷` 
-                    : '暂无题目';
+        {/* Multi Choice (151-300) */}
+        <button 
+            onClick={() => onSelect({ type: 'range', min: 151, max: 300, label: '多选题库' })}
+            className="w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
+        >
+            <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
+                <ListChecks className="w-6 h-6 text-purple-500" />
+            </div>
+            <div>
+                <div className="font-bold text-slate-800 dark:text-slate-100">多选题库</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    {getDeckStats(151, 300).count}道题 
+                </div>
+            </div>
+        </button>
 
-                return (
-                    <button 
-                        key={idx}
-                        onClick={() => onSelect({ type: 'range', min: opt.min, max: opt.max, label: opt.label })}
-                        className={`w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md ${opt.color} dark:border-opacity-50`}
-                    >
-                        <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
-                            {opt.icon}
-                        </div>
-                        <div>
-                            <div className="font-bold text-slate-800 dark:text-slate-100">{opt.label}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{subText}</div>
-                        </div>
-                    </button>
-                );
-            })}
-        </div>
+        {/* Judge (301-450) */}
+        <button 
+            onClick={() => onSelect({ type: 'range', min: 301, max: 450, label: '判断题库 ' })}
+            className="w-full p-4 rounded-2xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+        >
+            <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-950 flex items-center justify-center shadow-sm shrink-0">
+                <HelpCircle className="w-6 h-6 text-green-500" />
+            </div>
+            <div>
+                <div className="font-bold text-slate-800 dark:text-slate-100">判断题库 </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    {getDeckStats(301, 450).count}道题 
+                </div>
+            </div>
+        </button>
+
       </div>
     </div>
   );

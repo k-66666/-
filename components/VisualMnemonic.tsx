@@ -1,27 +1,27 @@
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { X, Maximize2, Minimize2, RefreshCw, Trophy, Sparkles, Smartphone, List, CheckCircle2 } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { X, Maximize2, Minimize2, RefreshCw, Trophy, Sparkles, Smartphone, List, Rocket } from 'lucide-react';
 
 interface VisualMnemonicProps {
   content: string;
   onClose?: () => void;
 }
 
-interface Point3D {
-  x: number;
-  y: number;
-  z: number;
-}
-
-interface Node extends Point3D {
+interface Node {
   id: number;
   label: string; // The short label like "1" or "A"
   text: string;  // The full content
+  x: number;
+  y: number;
+  z: number;
   unlocked: boolean;
   color: string;
 }
 
-interface Particle extends Point3D {
+interface Particle {
+  x: number;
+  y: number;
+  z: number;
   vx: number;
   vy: number;
   vz: number;
@@ -38,7 +38,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
   const [viewMode, setViewMode] = useState<'default' | 'fullscreen' | 'landscape'>('default');
   const [showList, setShowList] = useState(false);
   const [activeNodeIdx, setActiveNodeIdx] = useState<number>(-1);
-  const [camera, setCamera] = useState({ x: 0, y: 0, z: -450, rotX: 0, rotY: 0 });
+  const [camera, setCamera] = useState({ x: 0, y: 0, z: -450, rotX: 0.2, rotY: 0.5 });
   const mouseRef = useRef({ x: 0, y: 0, isDown: false, lastX: 0, lastY: 0 });
   const particlesRef = useRef<Particle[]>([]);
   const requestRef = useRef<number>(0);
@@ -46,28 +46,28 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
   // Palette for different memory chunks
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-  // 1. Improved Parsing Logic
+  // 1. Improved Parsing Logic (Smart Split)
   useEffect(() => {
     let rawSegments: string[] = [];
-    let labels: string[] = [];
 
     // Clean input
     const text = content.replace(/\\n/g, '\n').trim();
 
-    // Regex to match "1.", "1、", "(1)", "①", "1 " at start of lines or preceded by punctuation
-    // Lookahead (?=...) is used to split *before* the number so we keep the number in the segment
-    const splitRegex = /(?:^|\s|。|；|;|\n)(?=(?:(?:\d+[\.、\)\s])|(?:\(\d+\))|[①-⑩]))/g;
+    // Regex Explanation:
+    // Matches start of line or punctuation, followed by a lookahead for a numbering pattern
+    // Patterns: "1.", "1、", "(1)", "①"
+    const splitRegex = /(?:^|[\n。；;])(?=(?:\d+[\.、\s])|(?:\(\d+\))|[①-⑩])/g;
     
-    const splitResult = text.split(splitRegex).map(s => s.trim()).filter(s => s.length > 0);
+    // Split and filter empty strings
+    const potentialSegments = text.split(splitRegex).map(s => s.trim()).filter(s => s.length > 0);
 
-    if (splitResult.length > 1) {
-        // We found a numbered list!
-        rawSegments = splitResult;
+    if (potentialSegments.length > 1) {
+        rawSegments = potentialSegments;
     } else {
-        // Fallback: Split by sentence terminators for long text
+        // Fallback: Split by major punctuation if no numbered list detected
         rawSegments = text.split(/([。；;！!\n]+)/)
-            .reduce((acc, curr, idx, arr) => {
-                // Reattach punctuation to previous segment
+            .reduce((acc, curr, idx) => {
+                // Reattach punctuation to previous segment to keep sentences complete
                 if (idx % 2 === 1 && acc.length > 0) {
                     acc[acc.length - 1] += curr;
                 } else if (curr.trim().length > 0) {
@@ -86,17 +86,17 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
       const labelMatch = seg.match(/^(\d+|[①-⑩])/);
       const label = labelMatch ? labelMatch[1] : (i + 1).toString();
       
-      // Helix Math
-      const theta = i * 0.9 + Math.PI; // Spiral angle
-      const radius = 140; // Spread width
-      const ySpacing = 50; // Vertical distance
+      // Helix / Spiral Layout Calculation
+      const theta = i * 0.8 + Math.PI; // Spiral angle
+      const radius = 120 + (i * 5); // Radius grows slightly
+      const ySpacing = 60; 
       
       return {
         id: i,
         label,
-        text: seg,
+        text: seg.replace(/^(\d+[\.、\)]|[①-⑩])\s*/, ''), // Remove the number from the display text for cleaner look
         x: Math.cos(theta) * radius,
-        y: (i - rawSegments.length / 2) * ySpacing,
+        y: (i - (rawSegments.length - 1) / 2) * ySpacing,
         z: Math.sin(theta) * radius,
         unlocked: false,
         color: COLORS[i % COLORS.length]
@@ -105,7 +105,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
 
     setNodes(newNodes);
     setActiveNodeIdx(-1);
-    // Reset Camera
+    // Reset Camera slightly
     setCamera(prev => ({ ...prev, rotY: 0.5, rotX: 0.2 }));
 
   }, [content]);
@@ -176,24 +176,28 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
 
     const render = () => {
       frame++;
+      // Handle resizing based on viewMode
+      const isLandscape = viewMode === 'landscape';
+      // In landscape, we swap dimensions effectively in CSS, but canvas needs actual pixels
+      // However, since we rotate the container DIV, the canvas internal w/h should match the DIV's w/h
       const width = canvas.width = containerRef.current?.clientWidth || 300;
       const height = canvas.height = containerRef.current?.clientHeight || 400;
+      
       const cx = width / 2;
       const cy = height / 2;
       const focalLength = 500; // FOV
 
       // --- Background ---
-      // Deep Space
       const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(width, height));
-      grad.addColorStop(0, '#0f172a');
-      grad.addColorStop(1, '#020617');
+      grad.addColorStop(0, '#0f172a'); // Slate-900
+      grad.addColorStop(1, '#020617'); // Slate-950
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
 
-      // Twinkling Stars
+      // Stars
       ctx.fillStyle = '#ffffff';
-      for(let i=0; i<80; i++) {
-          const x = (Math.sin(i * 132.1) * width + frame * 0.2 * ((i%3)+1)) % width;
+      for(let i=0; i<60; i++) {
+          const x = (Math.sin(i * 132.1) * width + frame * 0.1 * ((i%3)+1)) % width;
           const y = (Math.cos(i * 53.2) * height) % height;
           const size = Math.random() * 1.5;
           const blink = Math.sin(frame * 0.05 + i) * 0.5 + 0.5;
@@ -281,7 +285,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
           if (!node.proj.visible) return;
 
           const { x, y, scale } = node.proj;
-          const size = (node.id === activeNodeIdx ? 22 : 16) * scale;
+          const size = (node.id === activeNodeIdx ? 24 : 16) * scale;
           const opacity = node.unlocked ? 1 : 0.4;
           
           // Glow/Atmosphere
@@ -305,7 +309,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
 
           // Rim Light
           ctx.strokeStyle = node.unlocked ? node.color : '#475569';
-          ctx.lineWidth = (node.id === activeNodeIdx ? 4 : 2) * scale;
+          ctx.lineWidth = (node.id === activeNodeIdx ? 3 : 1.5) * scale;
           ctx.stroke();
 
           // Label
@@ -323,7 +327,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
 
     render();
     return () => cancelAnimationFrame(requestRef.current);
-  }, [nodes, camera, activeNodeIdx]);
+  }, [nodes, camera, activeNodeIdx, viewMode]); // Re-render when viewMode changes size
 
   // Click Handler (Raycast-ish)
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -336,9 +340,6 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
 
-      // Simple closest node check
-      // We need to re-project to find screen coordinates matches
-      // This duplicates logic but is fine for click detection
       const width = rect.width;
       const height = rect.height;
       const cx = width / 2;
@@ -386,7 +387,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
     <div 
         ref={containerRef}
         className={`relative rounded-3xl overflow-hidden bg-slate-950 transition-all duration-300 shadow-2xl ring-1 ring-slate-800
-        ${viewMode !== 'default' ? 'fixed z-50' : 'w-full h-96 my-4'}
+        ${viewMode !== 'default' ? 'fixed z-50 shadow-[0_0_50px_rgba(0,0,0,0.8)]' : 'w-full h-96 my-4'}
         `}
         style={viewMode === 'landscape' ? {
             top: 0,
@@ -395,9 +396,12 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
             height: '100vw',
             transform: 'rotate(90deg)',
             transformOrigin: 'top left',
+            borderRadius: 0,
+            margin: 0
         } : viewMode === 'fullscreen' ? {
             inset: 0,
-            borderRadius: 0
+            borderRadius: 0,
+            margin: 0
         } : {}}
     >
         {/* Render Canvas */}
@@ -415,18 +419,18 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
         
         {/* --- UI HUD --- */}
         
-        {/* Top Bar */}
-        <div className="absolute top-4 left-4 z-10 flex gap-2">
+        {/* Top Bar Status */}
+        <div className="absolute top-4 left-4 z-10 flex gap-2 pointer-events-none">
             <div className={`backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold border shadow-lg flex items-center gap-2 transition-all ${isComplete ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-slate-800/60 text-blue-400 border-blue-500/30'}`}>
-                {isComplete ? <Trophy className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {isComplete ? <Trophy className="w-3.5 h-3.5" /> : <Rocket className="w-3.5 h-3.5" />}
                 <span>{isComplete ? '同步完成' : `记忆同步 ${unlockedCount}/${nodes.length}`}</span>
             </div>
         </div>
 
-        {/* Controls */}
+        {/* Top Right Controls */}
         <div className="absolute top-4 right-4 z-10 flex gap-2">
             <button 
-                onClick={() => setCamera({ x: 0, y: 0, z: -450, rotX: 0, rotY: 0 })}
+                onClick={() => setCamera({ x: 0, y: 0, z: -450, rotX: 0.2, rotY: 0.5 })}
                 className="p-2 bg-slate-800/60 backdrop-blur rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                 title="重置视角"
             >
@@ -441,8 +445,8 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
             </button>
             <button 
                 onClick={() => setViewMode(viewMode === 'landscape' ? 'default' : 'landscape')}
-                className={`p-2 backdrop-blur rounded-full transition-colors hidden sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden ${viewMode === 'landscape' ? 'bg-purple-600 text-white' : 'bg-slate-800/60 text-slate-400 hover:text-white'} block`}
-                title="手机横屏模式"
+                className={`p-2 backdrop-blur rounded-full transition-colors ${viewMode === 'landscape' ? 'bg-purple-600 text-white' : 'bg-slate-800/60 text-slate-400 hover:text-white'}`}
+                title="手机横屏沉浸模式"
             >
                 <Smartphone className={`w-4 h-4 ${viewMode === 'landscape' ? 'rotate-90' : ''}`} />
             </button>
@@ -475,7 +479,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
                          >
                              <div className="flex items-start gap-2">
                                  <span className="font-bold shrink-0 mt-0.5" style={{ color: node.color }}>{node.label}.</span>
-                                 <span className="leading-relaxed">{node.text}</span>
+                                 <span className="leading-relaxed">{node.text.slice(0, 30)}...</span>
                              </div>
                          </button>
                      ))}
@@ -494,7 +498,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
                          <div className="flex justify-between items-center mb-2 pl-3">
                             <span className="text-xs font-black tracking-widest uppercase flex items-center gap-2" style={{ color: nodes[activeNodeIdx].color }}>
                                 <span className="w-2 h-2 rounded-full animate-pulse bg-current" />
-                                NODE {nodes[activeNodeIdx].label}
+                                节点 {nodes[activeNodeIdx].label} 已同步
                             </span>
                          </div>
                          <div className="text-sm md:text-base font-medium text-white leading-relaxed pl-3 text-shadow-sm">
