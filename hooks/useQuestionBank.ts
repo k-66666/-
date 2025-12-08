@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { Question, UserProgress, INITIAL_PROGRESS } from '../types';
 import { SEED_QUESTIONS } from '../data/seed';
 
-// Updated storage key to v9 for Option Letter Fix
-const STORAGE_KEY_QUESTIONS = 'dm_questions_v9';
-const STORAGE_KEY_PROGRESS = 'dm_progress_v9';
+// Updated storage key to v11 to support new rounds field
+const STORAGE_KEY_QUESTIONS = 'dm_questions_v11';
+const STORAGE_KEY_PROGRESS = 'dm_progress_v11';
 
 export const useQuestionBank = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -18,7 +18,26 @@ export const useQuestionBank = () => {
     const storedProgress = localStorage.getItem(STORAGE_KEY_PROGRESS);
 
     if (storedQuestions) {
-      setQuestions(JSON.parse(storedQuestions));
+      const parsedStored: Question[] = JSON.parse(storedQuestions);
+      
+      // MERGE LOGIC: Add any questions from SEED that are missing in Stored
+      const storedIds = new Set(parsedStored.map(q => q.id));
+      const newFromSeed = SEED_QUESTIONS.filter(seedQ => !storedIds.has(seedQ.id));
+      
+      const combined = [...parsedStored, ...newFromSeed];
+      
+      // Migration: Ensure categories are set
+      const migrated = combined.map(q => {
+          if (!q.category) {
+              if (q.id.startsWith('zhongte_')) return { ...q, category: '中特' };
+              return { ...q, category: '自然辩证法' };
+          }
+          return q;
+      });
+
+      setQuestions(migrated);
+      localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(migrated));
+
     } else {
       setQuestions(SEED_QUESTIONS);
       localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(SEED_QUESTIONS));
@@ -26,6 +45,8 @@ export const useQuestionBank = () => {
 
     if (storedProgress) {
       const parsed = JSON.parse(storedProgress);
+      // Migration: Add rounds if missing
+      if (!parsed.rounds) parsed.rounds = {};
       if (!parsed.pinnedMistakes) parsed.pinnedMistakes = [];
       setProgress(parsed);
     }
@@ -64,12 +85,10 @@ export const useQuestionBank = () => {
 
       const newStreak = isCorrect ? prev.streak + 1 : 0;
       
-      // Manage pinned list
       let newPinned = prev.pinnedMistakes || [];
       if (keepInMistakes) {
           if (!newPinned.includes(questionId)) newPinned = [...newPinned, questionId];
       } else if (isCorrect) {
-          // If correct and NOT asked to keep, remove from pin
           newPinned = newPinned.filter(id => id !== questionId);
       }
 
@@ -105,17 +124,24 @@ export const useQuestionBank = () => {
     });
   };
 
+  const completeRound = (category: string) => {
+    setProgress(prev => ({
+        ...prev,
+        rounds: {
+            ...prev.rounds,
+            [category]: (prev.rounds?.[category] || 0) + 1
+        }
+    }));
+  };
+
   const resetProgress = () => {
     setProgress(INITIAL_PROGRESS);
   };
 
   const getMistakes = () => {
     return questions.filter(q => {
-      // Is Pinned?
       if (progress.pinnedMistakes?.includes(q.id)) return true;
-
       const stats = progress.questionStats[q.id];
-      // Has stats and last attempt was WRONG
       if (stats && stats.attempts.length > 0) {
         return !stats.attempts[stats.attempts.length - 1];
       }
@@ -132,6 +158,7 @@ export const useQuestionBank = () => {
     deleteQuestion,
     recordAttempt,
     togglePin,
+    completeRound,
     resetProgress,
     getMistakes
   };

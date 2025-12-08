@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { UserProgress, Question, QuestionType, QuestionStat } from '../types';
-import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight, Play } from 'lucide-react';
+import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight, Play, RotateCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface StatsViewProps {
@@ -8,17 +9,17 @@ interface StatsViewProps {
   totalQuestions: number;
   questions: Question[]; // Need questions to identify types
   onReview: (question: Question) => void;
+  currentRound: number;
+  currentRoundProgress: number;
+  onCompleteRound: () => void;
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, questions, onReview }) => {
+export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, questions, onReview, currentRound, currentRoundProgress, onCompleteRound }) => {
   const attemptedQuestions = Object.values(progress.questionStats) as QuestionStat[];
-  const firstTryCorrectCount = attemptedQuestions.filter(stat => stat.attempts.length > 0 && stat.attempts[0] === true).length;
-  const firstTryAccuracy = attemptedQuestions.length > 0
-    ? Math.round((firstTryCorrectCount / attemptedQuestions.length) * 100)
-    : 0;
-
-  const distinctAnswered = Object.keys(progress.questionStats).length;
-  const coverage = Math.round((distinctAnswered / totalQuestions) * 100);
+  
+  // Calculate round progress percentage
+  const roundPercentage = totalQuestions > 0 ? Math.round((currentRoundProgress / totalQuestions) * 100) : 0;
+  const isRoundComplete = currentRoundProgress >= totalQuestions && totalQuestions > 0;
 
   // Type Analysis
   const getAccuracyByType = (type: QuestionType) => {
@@ -38,40 +39,67 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
     { name: '判断题', accuracy: judgeAccuracy },
   ];
 
-  // Hardest Questions (Top 5 mistakes)
+  // Hardest Questions (Top 5 mistakes sorted by TOTAL wrong attempts)
   const hardestQuestions = Object.keys(progress.questionStats)
     .map(id => {
         const q = questions.find(q => q.id === id);
+        if (!q) return null;
         const stat = progress.questionStats[id];
         const failures = stat.attempts.filter(a => !a).length;
         return { q, failures };
     })
-    .filter(item => item.q && item.failures > 0)
+    .filter((item): item is {q: Question, failures: number} => !!item && item.failures > 0)
     .sort((a, b) => b.failures - a.failures)
     .slice(0, 5);
+
+  const getAnswerDisplay = (q: Question) => {
+      if (q.type === QuestionType.JUDGE) {
+          return q.correctAnswer ? '正确' : '错误';
+      }
+      if (q.type === QuestionType.ESSAY) {
+          return '查看详情'; // Essays are too long for this view
+      }
+      if (Array.isArray(q.correctAnswer)) {
+          return (q.correctAnswer as string[]).join('、');
+      }
+      return String(q.correctAnswer);
+  };
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-20">
       
       {/* Hero Stats */}
       <div className="grid grid-cols-2 gap-3">
+        {/* Round Counter Card */}
         <div className="bg-slate-900 dark:bg-blue-600 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Zap className="w-16 h-16" /></div>
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><RotateCw className="w-16 h-16" /></div>
           <div className="flex items-center gap-2 mb-2 opacity-80">
-            <Zap className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">第一直觉</span>
+            <RotateCw className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider">当前轮次</span>
           </div>
-          <div className="text-4xl font-black tracking-tight">{firstTryAccuracy}%</div>
-          <div className="text-[10px] mt-2 opacity-60 font-medium">真实掌握水平</div>
+          <div className="text-4xl font-black tracking-tight">第 {currentRound} 轮</div>
+          <div className="text-[10px] mt-2 opacity-60 font-medium">刷题遍数</div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        {/* Round Progress Card */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
            <div className="flex items-center gap-2 mb-2 text-slate-400 dark:text-slate-500">
             <Trophy className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">刷题进度</span>
+            <span className="text-xs font-bold uppercase tracking-wider">本轮进度</span>
           </div>
-          <div className="text-4xl font-black text-slate-800 dark:text-slate-200">{coverage}%</div>
-          <div className="text-[10px] mt-2 text-slate-400 dark:text-slate-500 font-medium">{distinctAnswered} / {totalQuestions} 题库</div>
+          <div className="text-4xl font-black text-slate-800 dark:text-slate-200">{currentRoundProgress} <span className="text-lg text-slate-400">/ {totalQuestions}</span></div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${roundPercentage}%` }} />
+          </div>
+          
+          {isRoundComplete && (
+              <button 
+                onClick={onCompleteRound}
+                className="absolute inset-0 bg-blue-600/90 hover:bg-blue-700/95 backdrop-blur-sm flex items-center justify-center text-white font-bold transition-all z-10 animate-in fade-in"
+              >
+                  开启下一轮
+              </button>
+          )}
         </div>
       </div>
 
@@ -100,7 +128,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
           <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-orange-500" />
-            高频错题榜 (Top 5)
+            高频错题榜 (历史累计)
           </h3>
           <div className="space-y-3">
               {hardestQuestions.length > 0 ? hardestQuestions.map((item, idx) => (
@@ -118,10 +146,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
                           </p>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                               答案: <span className="text-green-600 dark:text-green-400">
-                                {item.q?.type === QuestionType.JUDGE 
-                                    ? (item.q?.correctAnswer ? '正确' : '错误') 
-                                    : (item.q?.correctAnswer as string[]).join('、')
-                                }
+                                {getAnswerDisplay(item.q!)}
                               </span>
                           </p>
                       </div>
