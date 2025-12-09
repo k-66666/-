@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Maximize2, Minimize2, ZoomIn, ZoomOut, Move, RefreshCw, ChevronRight, ChevronDown } from 'lucide-react';
+import { Maximize2, Minimize2, ZoomIn, ZoomOut, Move, RefreshCw, ChevronRight, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 interface MindMapProps {
   content: string;
@@ -45,6 +45,7 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 50, y: 0 }); // Initial Offset
   const [isDragging, setIsDragging] = useState(false);
+  const [isMasked, setIsMasked] = useState(true); // Default to masked
   const lastPos = useRef({ x: 0, y: 0 });
 
   // 1. Parsing Logic (Smart Text Splitter)
@@ -330,6 +331,7 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
 
   const renderNodes = (node: TreeNode): React.ReactNode[] => {
       const nodes: React.ReactNode[] = [];
+      const isVisible = !isMasked || node.level === 0;
       
       nodes.push(
           <foreignObject
@@ -357,7 +359,16 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
                   onDoubleClick={() => toggleCollapse(node.id)}
               >
                   {/* Text Content */}
-                  <span className="line-clamp-4 leading-tight pointer-events-none">{node.text}</span>
+                  <span className={`line-clamp-4 leading-tight pointer-events-none transition-all duration-300 ${isVisible ? '' : 'blur-md opacity-40 grayscale'}`}>
+                    {node.text}
+                  </span>
+                  
+                  {/* Mask Overlay if hidden */}
+                  {!isVisible && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                         {/* Optional: Add a subtle icon or just rely on blur */}
+                      </div>
+                  )}
                   
                   {/* Collapse Indicator */}
                   {node.children.length > 0 && (
@@ -395,6 +406,16 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
                     {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                 </button>
             )}
+            
+            {/* Mask Toggle */}
+            <button 
+                onClick={() => setIsMasked(!isMasked)}
+                className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 active:scale-95 transition-all"
+                title={isMasked ? "显示内容" : "隐藏内容"}
+            >
+                {isMasked ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+
             <div className="flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <button onClick={() => setScale(s => Math.min(s + 0.1, 3))} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ZoomIn className="w-5 h-5" /></button>
                 <div className="h-px bg-slate-200 dark:bg-slate-700" />
