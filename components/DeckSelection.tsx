@@ -173,10 +173,10 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
                             <p className="mb-1">题目有误、新增题库或改进功能建议，请联系微信：</p>
                             <div className="flex flex-wrap gap-2 mt-1.5">
                                 <span className="font-mono font-bold select-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-700 dark:text-slate-300">
-                                    17513607707
+                                    k先生：17513607707
                                 </span>
                                 <span className="font-mono font-bold select-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-700 dark:text-slate-300">
-                                    18790660660
+                                    z先生：18790660660
                                 </span>
                             </div>
                          </div>
