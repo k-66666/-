@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { X, Maximize2, Minimize2, RefreshCw, Eye, EyeOff, Play, Zap, HelpCircle } from 'lucide-react';
+import { X, Maximize2, Minimize2, RefreshCw, Eye, EyeOff, Zap, HelpCircle } from 'lucide-react';
 import { playTone, playWrong } from '../utils/sound';
 
 interface VisualMnemonicProps {
@@ -197,8 +197,9 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
               nodesRef.current[nextIdx].state = 'active';
               activeIndexRef.current = nextIdx;
           } else {
+              // VICTORY STATE - Do NOT reset immediately
               setGameWon(true);
-              activeIndexRef.current = -1; // Done
+              activeIndexRef.current = -1; // No more active nodes
               playTone(880, 'sine', 0.5); // Victory tone
               if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
           }
@@ -216,7 +217,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
           // UI Updates
           setCombo(c => c + 1);
           setScore(s => s + 100 + (combo * 20));
-          setActiveText(node.text); // SHOW TEXT ONLY ON SUCCESS
+          setActiveText(node.text); 
 
       } else if (node.state === 'locked') {
           // --- FAILURE ---
@@ -293,18 +294,23 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
     const render = () => {
       frame++;
       
-      // Auto-resize
+      // Auto-resize and DPI Handling
       if (containerRef.current) {
-          const cw = containerRef.current.clientWidth;
-          const ch = containerRef.current.clientHeight;
-          if (canvas.width !== cw || canvas.height !== ch) {
-              canvas.width = cw;
-              canvas.height = ch;
+          const dpr = window.devicePixelRatio || 1;
+          const rect = containerRef.current.getBoundingClientRect();
+          
+          // Only resize if dimensions changed
+          if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+              canvas.width = rect.width * dpr;
+              canvas.height = rect.height * dpr;
+              // Normalize coordinate system to use CSS pixels
+              ctx.setTransform(dpr, 0, 0, dpr, 0, 0); 
           }
       }
 
-      const w = canvas.width;
-      const h = canvas.height;
+      // Use logical width/height for calculations (CSS pixels)
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const h = canvas.height / (window.devicePixelRatio || 1);
       const fov = 600; // Field of View
 
       // --- Physics & Camera ---
@@ -331,13 +337,12 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
       }
 
       // Smooth Camera Rotation (Lerp)
-      // Lerp currentRot -> targetRot
       const rotDiff = cameraRef.current.targetRotY - cameraRef.current.rotY;
-      cameraRef.current.rotY += rotDiff * 0.1; // Smoothness factor (0.1 is smooth, 1 is instant)
+      cameraRef.current.rotY += rotDiff * 0.1;
 
       // Victory Spin
       if (gameWon) {
-          cameraRef.current.targetRotY += 0.02;
+          cameraRef.current.targetRotY += 0.005;
       }
 
       // Camera Shake
@@ -348,6 +353,9 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
       const sy = (Math.random() - 0.5) * cameraRef.current.shake;
 
       // Clear Screen
+      // Note: We need to clear based on the scaled size
+      ctx.clearRect(0,0,w,h);
+      
       const bgGrad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w);
       bgGrad.addColorStop(0, '#020617');
       bgGrad.addColorStop(1, '#1e1b4b');
@@ -482,42 +490,26 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
           ctx.globalAlpha = 1;
           ctx.fillText(node.label, x, y);
 
-          // CONTENT TEXT (HIDING LOGIC)
-          // Logic: 
-          // 1. If Done -> Always Show
-          // 2. If Active -> Show ONLY if showHint is true. Else show ???
-          // 3. If Locked -> Show nothing
-          if (scale > 0.4) {
-             const yOffset = y - size * 1.8;
+          // "Tap to Reveal" indicator for active nodes
+          if (node.state === 'active' && !showHint && scale > 0.4 && frame % 60 < 30) {
+             ctx.fillStyle = node.color;
+             ctx.font = `bold ${Math.max(8, 10 * scale)}px sans-serif`;
+             ctx.fillText("点击", x, y + size * 1.8);
+          }
+
+          // FIX: Show Hint Text
+          if (node.state === 'active' && showHint) {
+             ctx.fillStyle = '#ffffff';
+             ctx.shadowColor = 'black';
+             ctx.shadowBlur = 4;
+             // Draw text above the node
+             ctx.font = `bold ${Math.max(12, 16 * scale)}px sans-serif`;
              
-             if (node.state === 'done') {
-                 // Completed Text
-                 ctx.fillStyle = '#fff';
-                 ctx.font = `bold ${Math.max(12, 16 * scale)}px 'Noto Sans SC', sans-serif`;
-                 ctx.shadowColor = 'black';
-                 ctx.shadowBlur = 6;
-                 ctx.fillText(node.text.substring(0, 12) + (node.text.length > 12 ? '...' : ''), x, yOffset);
-                 ctx.shadowBlur = 0;
-             } else if (node.state === 'active') {
-                 // Active Text
-                 if (showHint) {
-                     ctx.fillStyle = '#fff';
-                     ctx.font = `bold ${Math.max(12, 16 * scale)}px 'Noto Sans SC', sans-serif`;
-                     ctx.fillText(node.text.substring(0, 10) + '...', x, yOffset);
-                 } else {
-                     // HIDDEN STATE (Default)
-                     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                     ctx.font = `italic ${Math.max(10, 14 * scale)}px sans-serif`;
-                     ctx.fillText("???", x, yOffset);
-                     
-                     // "Tap to Reveal" indicator
-                     if (frame % 60 < 30) {
-                         ctx.fillStyle = node.color;
-                         ctx.font = `bold ${Math.max(8, 10 * scale)}px sans-serif`;
-                         ctx.fillText("点击回忆", x, y + size * 1.8);
-                     }
-                 }
-             }
+             // Wrap or truncate simple text for hint
+             const text = node.text.length > 20 ? node.text.substring(0, 18) + '...' : node.text;
+             ctx.fillText(text, x, y - size * 1.5);
+             
+             ctx.shadowBlur = 0;
           }
       });
 
@@ -525,11 +517,11 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
     };
 
     render();
-  }, [showHint]); // Re-bind effect if showHint changes to update render loop logic
+  }, [showHint, gameWon]); 
 
   // --- Render UI ---
   const containerClass = isFullscreen 
-    ? "fixed inset-0 z-50 bg-slate-950 flex flex-col" 
+    ? "fixed inset-0 z-[100] bg-slate-950 flex flex-col" 
     : "relative w-full h-[450px] rounded-2xl overflow-hidden bg-slate-950 shadow-inner border border-slate-800 my-4 touch-none select-none";
 
   return (
@@ -538,12 +530,13 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
             ref={canvasRef}
             className="block w-full h-full cursor-grab active:cursor-grabbing"
             onMouseDown={(e) => {
-                if (gameWon) {
-                    initGame(); // Click anywhere to replay if won
-                    return;
-                }
+                if (gameWon) return; // Don't allow clicking nodes if won (use restart button)
                 const rect = canvasRef.current!.getBoundingClientRect();
-                const hit = checkIntersection(e.clientX - rect.left, e.clientY - rect.top, canvasRef.current!.width, canvasRef.current!.height, 600);
+                // Adjust for DPI calculation in logic
+                const dpr = window.devicePixelRatio || 1;
+                // Note: checkIntersection logic operates on CSS pixels, canvas is scaled contextually
+                // But our checkIntersection function expects CSS pixel coordinates because we used w/h derived from CSS size in loop
+                const hit = checkIntersection(e.clientX - rect.left, e.clientY - rect.top, canvasRef.current!.width / dpr, canvasRef.current!.height / dpr, 600);
                 if (hit !== -1) handleNodeClick(hit);
                 else handleStart(e.clientX);
             }}
@@ -552,22 +545,19 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
             onMouseLeave={handleEnd}
             
             onTouchStart={(e) => {
-                if (gameWon) {
-                    initGame(); // Tap anywhere to replay if won
-                    return;
-                }
+                if (gameWon) return;
                 const touch = e.touches[0];
                 handleStart(touch.clientX);
             }}
             onTouchMove={(e) => handleMove(e.touches[0].clientX)}
             onTouchEnd={(e) => {
-                if (gameWon) return; // Handled by start
+                if (gameWon) return; 
                 const touch = e.changedTouches[0];
                 const rect = canvasRef.current!.getBoundingClientRect();
-                // Check if it was a tap (little movement)
+                const dpr = window.devicePixelRatio || 1;
                 const dist = Math.abs(touch.clientX - touchRef.current.startX);
                 if (dist < 10) {
-                    const hit = checkIntersection(touch.clientX - rect.left, touch.clientY - rect.top, canvasRef.current!.width, canvasRef.current!.height, 600);
+                    const hit = checkIntersection(touch.clientX - rect.left, touch.clientY - rect.top, canvasRef.current!.width / dpr, canvasRef.current!.height / dpr, 600);
                     if (hit !== -1) handleNodeClick(hit);
                 }
                 handleEnd();
@@ -580,6 +570,11 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
                 <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg px-3 py-1 text-xs font-mono text-blue-400 font-bold shadow-lg">
                     SYNC: {Math.round((score / (nodesRef.current.length * 200 || 1)) * 100)}%
                 </div>
+                {combo > 1 && (
+                     <div key={combo} className="text-xl font-black italic text-yellow-400 animate-bounce drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]">
+                        {combo} COMBO!
+                     </div>
+                )}
             </div>
 
             <div className="flex gap-2 pointer-events-auto">
@@ -594,8 +589,9 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
                     onMouseUp={() => setShowHint(false)}
                     onTouchStart={() => setShowHint(true)}
                     onTouchEnd={() => setShowHint(false)}
-                    className="p-3 rounded-xl bg-slate-800/80 text-blue-400 border border-blue-500/30 active:scale-95 transition-all shadow-lg"
+                    className="p-3 rounded-xl bg-slate-800/80 text-blue-400 border border-blue-500/30 active:scale-95 transition-all shadow-lg select-none"
                     title="按住偷看"
+                    style={{ WebkitUserSelect: 'none' }}
                 >
                     {showHint ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
@@ -618,7 +614,7 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
 
         {/* Instructions Overlay */}
         {showInstructions && (
-            <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setShowInstructions(false)}>
+            <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setShowInstructions(false)}>
                 <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <Zap className="w-5 h-5 text-yellow-400" />
@@ -637,10 +633,6 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
                             <span className="bg-slate-800 text-blue-400 font-bold px-2 rounded">3</span>
                             <span>记不住？按住右上角的<strong>眼睛图标</strong>偷看。</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                            <span className="bg-slate-800 text-blue-400 font-bold px-2 rounded">4</span>
-                            <span>点亮所有节点即完成<strong>记忆同步</strong>。</span>
-                        </li>
                     </ul>
                     <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl mt-2">
                         开始记忆
@@ -649,38 +641,40 @@ export const VisualMnemonic: React.FC<VisualMnemonicProps> = ({ content, onClose
             </div>
         )}
 
-        {/* Center Flash Text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-            {combo > 1 && (
-                <div key={combo} className="text-3xl font-black italic text-yellow-400 tracking-tighter animate-bounce drop-shadow-[0_0_15px_rgba(250,204,21,0.8)] stroke-black" style={{ textShadow: '2px 2px 0px black' }}>
-                    {combo} COMBO!
-                </div>
-            )}
-            
-            {activeText && (
-                <div key={activeText} className="mt-12 px-8 py-4 bg-black/80 backdrop-blur-xl border-y-2 border-blue-500 text-white font-bold text-xl md:text-3xl text-center max-w-[95%] shadow-[0_0_30px_rgba(59,130,246,0.5)] animate-in zoom-in slide-in-from-bottom-5 duration-300">
-                    {activeText}
-                </div>
-            )}
+        {/* ACTIVE TEXT DISPLAY (Bottom Docked - Non Obstructive) */}
+        {activeText && !gameWon && (
+             <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none">
+                 <div className="bg-black/70 backdrop-blur-xl border border-blue-500/50 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
+                     <div className="text-[10px] font-bold text-blue-400 mb-1 uppercase tracking-widest">当前节点</div>
+                     <div className="text-lg md:text-xl font-bold text-white leading-relaxed">
+                         {activeText}
+                     </div>
+                 </div>
+             </div>
+        )}
 
-            {gameWon && (
-                <div className="flex flex-col items-center gap-4 animate-in zoom-in duration-300">
-                    <div className="px-8 py-3 bg-green-500 text-black font-black text-2xl rounded-full animate-bounce shadow-[0_0_30px_#22c55e]">
-                        记忆同步完成
-                    </div>
-                    <div className="px-4 py-2 bg-slate-900/80 rounded-full text-slate-300 text-sm font-bold border border-slate-700 animate-pulse">
-                        点击任意处开启下一轮记忆
-                    </div>
+        {/* VICTORY OVERLAY */}
+        {gameWon && (
+            <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-500 p-6 text-center">
+                 <div className="px-8 py-3 bg-green-500 text-black font-black text-2xl rounded-full mb-6 shadow-[0_0_30px_#22c55e] animate-bounce">
+                    记忆同步完成
                 </div>
-            )}
-        </div>
-
-        {/* Bottom Instructions (Only visible when idle) */}
-        {!gameWon && !activeText && !showInstructions && (
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none">
-                <div className="bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-slate-700 text-xs text-slate-300 flex items-center gap-2 shadow-xl">
-                    <Zap className="w-3 h-3 text-yellow-400 fill-current animate-pulse" />
-                    <span>点击序号回忆关键词 · 按住右上角眼睛偷看</span>
+                <p className="text-slate-300 mb-8 max-w-xs">太棒了！你已经完成了所有节点的记忆连接。</p>
+                <div className="flex gap-4">
+                     <button 
+                        onClick={initGame}
+                        className="px-6 py-3 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                     >
+                        再来一次
+                     </button>
+                     {onClose && (
+                        <button 
+                            onClick={onClose}
+                            className="px-6 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 border border-slate-700 transition-colors"
+                        >
+                            退出
+                        </button>
+                     )}
                 </div>
             </div>
         )}

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Maximize2, Minimize2, ZoomIn, ZoomOut, Move, RefreshCw, ChevronRight, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
@@ -14,6 +15,7 @@ interface TreeNode {
   level: number;
   children: TreeNode[];
   collapsed?: boolean;
+  masked?: boolean; // New: Controls text blurring
   // Layout properties
   x: number;
   y: number;
@@ -45,12 +47,25 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 50, y: 0 }); // Initial Offset
   const [isDragging, setIsDragging] = useState(false);
-  const [isMasked, setIsMasked] = useState(true); // Default to masked
+  const [globalMasked, setGlobalMasked] = useState(true); // Default to masked
   const lastPos = useRef({ x: 0, y: 0 });
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
+  // Orientation State
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+        // Only consider it portrait if width < height (mobile typical)
+        setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    return () => window.removeEventListener('resize', checkOrientation);
+  }, []);
 
   // 1. Parsing Logic (Smart Text Splitter)
   const parseContent = useCallback((text: string): TreeNode => {
-    // Clean text
     const cleanText = text.replace(/\\n/g, '\n').trim();
     
     // Root Node
@@ -59,30 +74,26 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
       text: '核心考点', // Default root text
       level: 0,
       children: [],
+      masked: false, // Root is never masked
       x: 0, y: 0, width: 140, height: 50,
       color: '#ef4444'
     };
 
     // Split into primary chunks (Level 1)
-    // Matches: 1. (1) ① One. First. etc. OR newlines
     const regexL1 = /(?:^|[\n\s])(?=\d+[\.、\s])|(?=\(\d+\))|(?=[①-⑩])|(?=\d+\s)/g;
     let chunks = cleanText.split(regexL1).map(s => s.trim()).filter(s => s);
 
-    // Fallback: If no numbering found, split by common sentence delimiters
     if (chunks.length <= 1) {
         chunks = cleanText.split(/([。；;！!\n]+)/)
-          .filter((_, i) => i % 2 === 0) // keep content
+          .filter((_, i) => i % 2 === 0) 
           .map(s => s.trim())
-          .filter(s => s.length > 4); // Filter out too short noise
+          .filter(s => s.length > 4); 
     }
 
-    // Limit branches to avoid chaos in auto-gen
     if (chunks.length > 10) chunks = chunks.slice(0, 10);
 
     chunks.forEach((chunk, i) => {
-        // Extract Label (Level 1)
         let label = chunk;
-        // Try to split logic inside chunk for Level 2 (e.g. "Title: Description")
         const subSplit = label.split(/[:：-]/);
         
         let nodeText = label;
@@ -97,24 +108,21 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
                      text: desc,
                      level: 2,
                      children: [],
+                     masked: true,
                      x: 0, y: 0, width: 220, height: 0,
                      color: COLORS[i % COLORS.length]
                  });
              }
         } else {
-             // Just remove numbering
              nodeText = nodeText.replace(/^(\d+[\.、\s]|[①-⑩]|\(\d+\))/, '').trim();
         }
         
-        // If text is still too long, truncate or split? 
-        // For mind map, we assume the user reads the full text in the card. 
-        // We just put it as a node.
-
         rootNode.children.push({
             id: `node-${i}`,
             text: nodeText,
             level: 1,
             children: children,
+            masked: true, // Default children to masked
             x: 0, y: 0, width: children.length > 0 ? 160 : 200, height: 0,
             color: COLORS[i % COLORS.length]
         });
@@ -126,6 +134,7 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
             text: cleanText,
             level: 1,
             children: [],
+            masked: true,
             x: 0, y: 0, width: 200, height: 0,
             color: COLORS[0]
         });
@@ -134,12 +143,10 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
     return rootNode;
   }, []);
 
-  // 2. Layout Algorithm (Simple Horizontal Tree)
+  // 2. Layout Algorithm
   const calculateLayout = useCallback((node: TreeNode) => {
-      // Step 1: Calculate Heights (Post-Order)
+      // Step 1: Calculate Heights
       const measureNode = (n: TreeNode): number => {
-          // Estimate Height based on text length (approx wrapping)
-          // Assume ~10 chars per line, line height 20px, + padding
           const lines = Math.ceil(n.text.length / (n.level === 0 ? 8 : 11));
           n.height = Math.max(40, lines * 20 + NODE_PADDING_Y * 2);
           
@@ -151,7 +158,6 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
           n.children.forEach(child => {
               childrenHeight += measureNode(child);
           });
-          // Add gaps
           childrenHeight += (n.children.length - 1) * NODE_GAP_Y;
           
           return Math.max(n.height, childrenHeight);
@@ -159,47 +165,26 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
 
       measureNode(node);
 
-      // Step 2: Set Coordinates (Pre-Order)
+      // Step 2: Set Coordinates
       const layoutNode = (n: TreeNode, x: number, y: number, availableHeight: number) => {
           n.x = x;
-          n.y = y; // Centered in available height space? No, y is top-left usually, let's use center-y for connections logic
+          n.y = y; 
           
           if (n.collapsed || n.children.length === 0) return;
 
-          let currentY = y - availableHeight / 2; // Start from top of this node's bounding box
-          
-          // Actually, let's just stack children centered on parent Y
-          // Calculate total children height again to be safe
-          let totalChildrenH = 0;
-           n.children.forEach(c => {
-               // We need the computed 'subtree height' from step 1? 
-               // Simplified: Re-calculate or store in Step 1.
-               // For this simple version, let's just stack them.
-               // We need to know how much vertical space each child 'claims'.
-               // Let's assume measureNode returned the claimed height.
-               // We need to store it. Let's cheat and re-measure or store in node object (not in interface strictly but ok in JS)
-               // For strict TS, let's assume we do a simple stack based on text height for now.
-               // Better:
-               // Parent Y is fixed. Children are spread around Parent Y.
-           });
-
-           // Simple Layout: 
-           // 1. Determine total height of children block
-           const childBlockH = n.children.reduce((acc, c) => acc + (c as any)._subtreeHeight + NODE_GAP_Y, 0) - NODE_GAP_Y;
+          // Simple Layout: Determine total height of children block
+          const childBlockH = n.children.reduce((acc, c) => acc + (c as any)._subtreeHeight + NODE_GAP_Y, 0) - NODE_GAP_Y;
            
-           let startY = n.y - childBlockH / 2;
+          let startY = n.y - childBlockH / 2;
            
-           n.children.forEach(child => {
+          n.children.forEach(child => {
                const childH = (child as any)._subtreeHeight;
                const childCenterY = startY + childH / 2;
-               
                layoutNode(child, n.x + n.width + LEVEL_GAP, childCenterY, childH);
-               
                startY += childH + NODE_GAP_Y;
-           });
+          });
       };
       
-      // Helper to store subtree height
       const calcSubtreeHeight = (n: TreeNode): number => {
           if (n.collapsed || n.children.length === 0) {
               (n as any)._subtreeHeight = n.height;
@@ -208,21 +193,28 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
           let h = 0;
           n.children.forEach(c => h += calcSubtreeHeight(c));
           h += (n.children.length - 1) * NODE_GAP_Y;
-          // Subtree height is max of node itself or its children stack
           (n as any)._subtreeHeight = Math.max(n.height, h);
           return (n as any)._subtreeHeight;
       };
 
       calcSubtreeHeight(node);
-      layoutNode(node, 50, 0, (node as any)._subtreeHeight); // y=0 is vertical center relative to container center
+      layoutNode(node, 50, 0, (node as any)._subtreeHeight);
       
-      return { ...node }; // Return new reference to trigger render
+      return { ...node }; 
   }, []);
 
   // Initialize
   useEffect(() => {
     if (content) {
         const tree = parseContent(content);
+        // Apply initial mask state based on globalMasked
+        // Helper to apply mask recursively
+        const applyMask = (n: TreeNode, mask: boolean) => {
+            if (n.level > 0) n.masked = mask;
+            n.children.forEach(c => applyMask(c, mask));
+        }
+        applyMask(tree, globalMasked);
+
         const layoutedTree = calculateLayout(tree);
         setRoot(layoutedTree);
         
@@ -234,9 +226,46 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
             }
         }, 0);
     }
-  }, [content, parseContent, calculateLayout]);
+  }, [content, parseContent, calculateLayout]); // Intentionally not re-running on globalMasked toggle to avoid reset
 
-  // Recalculate layout when collapse state changes
+  // Logic to toggle Global Mask
+  const toggleGlobalMask = () => {
+      if (!root) return;
+      const newMaskState = !globalMasked;
+      setGlobalMasked(newMaskState);
+      
+      // Update all nodes
+      const updateNode = (n: TreeNode) => {
+          if (n.level > 0) n.masked = newMaskState;
+          n.children.forEach(updateNode);
+      };
+      const newRoot = { ...root };
+      updateNode(newRoot);
+      // No layout change needed, just render update
+      setRoot(newRoot);
+  };
+
+  // Logic to toggle Individual Node Mask (Click)
+  const toggleNodeMask = (nodeId: string) => {
+      if (!root) return;
+      
+      const updateNode = (n: TreeNode): boolean => {
+          if (n.id === nodeId) {
+              n.masked = !n.masked;
+              return true;
+          }
+          for (let child of n.children) {
+              if (updateNode(child)) return true;
+          }
+          return false;
+      };
+      
+      const newRoot = { ...root };
+      updateNode(newRoot);
+      setRoot(newRoot);
+  };
+
+  // Logic to toggle Collapse (Double Click or Icon)
   const toggleCollapse = (nodeId: string) => {
       if (!root) return;
       
@@ -251,10 +280,7 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
           return false;
       };
       
-      // Deep clone to avoid mutation issues in strict mode
-      // simplified: mutation is fine here as long as we trigger setRoot
-      const newRoot = { ...root }; 
-      // Re-find in new structure (since calculateLayout modifies nodes) - actually simple mutation is fine then setRoot
+      const newRoot = { ...root };
       toggleNode(newRoot);
       const layouted = calculateLayout(newRoot);
       setRoot(layouted);
@@ -262,29 +288,40 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
 
   // Interaction Handlers
   const handleWheel = (e: React.WheelEvent) => {
-      // Ctrl + Wheel to Zoom
       if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           const delta = e.deltaY > 0 ? 0.9 : 1.1;
           setScale(s => Math.min(Math.max(s * delta, 0.2), 3));
       } else {
-          // Pan
           setPosition(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
       }
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-      if ((e.target as HTMLElement).closest('.mindmap-node')) return; // Don't drag if clicking node
+      if ((e.target as HTMLElement).closest('.mindmap-node')) return; 
       e.currentTarget.setPointerCapture(e.pointerId);
       setIsDragging(true);
       lastPos.current = { x: e.clientX, y: e.clientY };
+      dragStartPos.current = { x: e.clientX, y: e.clientY };
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
       if (!isDragging) return;
       e.preventDefault();
-      const dx = e.clientX - lastPos.current.x;
-      const dy = e.clientY - lastPos.current.y;
+      
+      let dx = e.clientX - lastPos.current.x;
+      let dy = e.clientY - lastPos.current.y;
+
+      // Adjust for 90deg rotation in forced landscape mode
+      if (isFullscreen && isPortrait) {
+          // Screen Y+ (Down) -> Local X+
+          // Screen X+ (Right) -> Local Y- 
+          const screenDx = dx;
+          const screenDy = dy;
+          dx = screenDy;
+          dy = -screenDx;
+      }
+
       setPosition(p => ({ x: p.x + dx, y: p.y + dy }));
       lastPos.current = { x: e.clientX, y: e.clientY };
   };
@@ -292,6 +329,16 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
   const handlePointerUp = (e: React.PointerEvent) => {
       setIsDragging(false);
       e.currentTarget.releasePointerCapture(e.pointerId);
+
+      // Check for click (minimal movement)
+      const dx = e.clientX - dragStartPos.current.x;
+      const dy = e.clientY - dragStartPos.current.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      // If clicked and not fullscreen, enter fullscreen
+      if (dist < 5 && !isFullscreen && toggleFullscreen) {
+          toggleFullscreen();
+      }
   };
 
   // Render Helpers
@@ -306,8 +353,6 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
           const childLeft = child.x;
           const childY = child.y;
           
-          // Bezier Curve
-          // Control points: Halfway horizontally
           const cp1x = parentRight + (childLeft - parentRight) / 2;
           const cp1y = parentY;
           const cp2x = parentRight + (childLeft - parentRight) / 2;
@@ -331,7 +376,7 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
 
   const renderNodes = (node: TreeNode): React.ReactNode[] => {
       const nodes: React.ReactNode[] = [];
-      const isVisible = !isMasked || node.level === 0;
+      const isVisible = !node.masked;
       
       nodes.push(
           <foreignObject
@@ -347,26 +392,34 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
                       w-full h-full rounded-xl border-2 flex items-center justify-center p-2 text-center relative
                       transition-all duration-200 cursor-pointer hover:shadow-lg active:scale-95 select-none
                       ${node.collapsed && node.children.length > 0 ? 'ring-4 ring-offset-2 ring-opacity-30' : ''}
+                      ${node.masked ? 'bg-slate-100 dark:bg-slate-800' : ''} 
                   `}
                   style={{ 
-                      backgroundColor: node.level === 0 ? node.color : 'white',
+                      backgroundColor: node.level === 0 ? node.color : (node.masked ? undefined : 'white'),
                       borderColor: node.color,
                       color: node.level === 0 ? 'white' : '#1e293b',
                       fontSize: node.level === 0 ? '14px' : '12px',
                       fontWeight: node.level === 0 ? 'bold' : 'normal',
                       boxShadow: node.collapsed ? `0 0 0 4px ${node.color}30` : 'none'
                   }}
-                  onDoubleClick={() => toggleCollapse(node.id)}
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      if (node.level > 0) toggleNodeMask(node.id);
+                  }}
+                  onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      toggleCollapse(node.id);
+                  }}
               >
                   {/* Text Content */}
-                  <span className={`line-clamp-4 leading-tight pointer-events-none transition-all duration-300 ${isVisible ? '' : 'blur-md opacity-40 grayscale'}`}>
+                  <span className={`line-clamp-4 leading-tight pointer-events-none transition-all duration-300 ${isVisible ? '' : 'blur-md opacity-20 grayscale'}`}>
                     {node.text}
                   </span>
                   
-                  {/* Mask Overlay if hidden */}
-                  {!isVisible && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                         {/* Optional: Add a subtle icon or just rely on blur */}
+                  {/* Mask Overlay Click Prompt */}
+                  {!isVisible && node.level > 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                         <EyeOff className="w-4 h-4 text-slate-400 opacity-50" />
                       </div>
                   )}
                   
@@ -393,13 +446,17 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
     <div 
         ref={containerRef}
         className={`relative overflow-hidden transition-all duration-300 bg-slate-50 dark:bg-slate-900 
-        ${isFullscreen ? 'fixed inset-0 z-50 flex flex-col' : 'w-full h-[400px] rounded-2xl border border-slate-200 dark:border-slate-800 my-2 shadow-inner'}`}
+        ${isFullscreen 
+            ? isPortrait 
+                ? 'fixed top-0 left-full w-[100vh] h-[100vw] z-[100] origin-top-left rotate-90' 
+                : 'fixed inset-0 z-[100] flex flex-col'
+            : 'w-full h-[400px] rounded-2xl border border-slate-200 dark:border-slate-800 my-2 shadow-inner'}`}
     >
         {/* Controls Overlay */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
             {toggleFullscreen && (
                 <button 
-                    onClick={toggleFullscreen}
+                    onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
                     className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 active:scale-95 transition-all"
                     title={isFullscreen ? "退出全屏" : "全屏展开"}
                 >
@@ -409,20 +466,20 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
             
             {/* Mask Toggle */}
             <button 
-                onClick={() => setIsMasked(!isMasked)}
+                onClick={(e) => { e.stopPropagation(); toggleGlobalMask(); }}
                 className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 active:scale-95 transition-all"
-                title={isMasked ? "显示内容" : "隐藏内容"}
+                title={globalMasked ? "显示全部" : "隐藏全部"}
             >
-                {isMasked ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {globalMasked ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
 
             <div className="flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <button onClick={() => setScale(s => Math.min(s + 0.1, 3))} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ZoomIn className="w-5 h-5" /></button>
+                <button onClick={(e) => { e.stopPropagation(); setScale(s => Math.min(s + 0.1, 3)); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ZoomIn className="w-5 h-5" /></button>
                 <div className="h-px bg-slate-200 dark:bg-slate-700" />
-                <button onClick={() => setScale(s => Math.max(s - 0.1, 0.2))} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ZoomOut className="w-5 h-5" /></button>
+                <button onClick={(e) => { e.stopPropagation(); setScale(s => Math.max(s - 0.1, 0.2)); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ZoomOut className="w-5 h-5" /></button>
             </div>
             <button 
-                 onClick={() => { setScale(1); if(containerRef.current) setPosition({ x: 50, y: containerRef.current.clientHeight/2 }); }}
+                 onClick={(e) => { e.stopPropagation(); setScale(1); if(containerRef.current) setPosition({ x: 50, y: containerRef.current.clientHeight/2 }); }}
                  className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-500 active:scale-95 transition-all"
             >
                 <RefreshCw className="w-5 h-5" />
@@ -461,7 +518,7 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
         {/* Helper Hint */}
         <div className="absolute bottom-4 left-4 pointer-events-none bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-full text-xs text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-2">
             <Move className="w-3 h-3" />
-            <span>拖拽画布 · 滚轮缩放 · 双击节点折叠</span>
+            <span>拖拽画布 · 滚轮缩放 · <strong>单击</strong>节点显隐 · <strong>双击</strong>折叠</span>
         </div>
     </div>
   );
