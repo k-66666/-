@@ -1,8 +1,7 @@
 
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { Plus, Trash2, Save, Pencil, X, Wand2, Check, CheckSquare, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Save, Pencil, X, Wand2, Check, CheckSquare, Sparkles, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface QuestionManagerProps {
@@ -15,6 +14,7 @@ interface QuestionManagerProps {
 export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onUpdate, onDelete }) => {
   const [activeView, setActiveView] = useState<'list' | 'editor' | 'import' | 'excel'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Form State
   const [type, setType] = useState<QuestionType>(QuestionType.CHOICE);
@@ -38,6 +38,40 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
     setAnalysis('');
     setEditingId(null);
     setImportText('');
+  };
+
+  const filteredQuestions = useMemo(() => {
+    if (!searchTerm) return questions;
+    const lower = searchTerm.toLowerCase();
+    return questions.filter(q => q.content.toLowerCase().includes(lower) || q.id.toLowerCase().includes(lower));
+  }, [questions, searchTerm]);
+
+  const getAnswerDisplay = (q: Question) => {
+    if (q.type === QuestionType.JUDGE) {
+        return q.correctAnswer ? '正确 (√)' : '错误 (×)';
+    }
+    if (q.type === QuestionType.ESSAY) {
+        return String(q.correctAnswer);
+    }
+    
+    // 将答案标准化为数组
+    const answers = Array.isArray(q.correctAnswer) ? q.correctAnswer : [String(q.correctAnswer)];
+    
+    // 如果是选择题且有选项数据，显示“字母. 文本”
+    if (q.type === QuestionType.CHOICE && q.options && q.options.length > 0) {
+         return answers.map(ans => {
+             // 简单的校验：确保答案是单个大写字母
+             if (ans.length === 1 && /[A-Z]/.test(ans)) {
+                 const index = ans.charCodeAt(0) - 65;
+                 const text = q.options?.[index];
+                 // 返回格式：A. 选项内容
+                 return text ? `${ans}.${text}` : ans;
+             }
+             return ans;
+         }).join('; ');
+    }
+    
+    return answers.join('、');
   };
 
   const handleStartEdit = (q: Question) => {
@@ -171,29 +205,57 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
       </div>
 
       {activeView === 'list' && (
-        <div className="flex-1 overflow-y-auto space-y-3 pb-20">
-            {questions.map((q, idx) => (
-                <div key={q.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-start group relative shadow-sm">
-                    <div className="flex-1 pr-16"> 
-                        <div className="flex gap-2 mb-2">
-                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">{idx + 1}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                                q.type === QuestionType.JUDGE ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 
-                                q.type === QuestionType.ESSAY ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' :
-                                'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                            }`}>
-                                {q.type === QuestionType.JUDGE ? '判断' : q.type === QuestionType.ESSAY ? '简答' : '选择'}
-                            </span>
+        <>
+            {/* Search Bar */}
+            <div className="relative shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="搜索题目内容..." 
+                    className="w-full pl-9 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white shadow-sm"
+                />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pb-20">
+                {filteredQuestions.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 text-sm">
+                        没有找到匹配的题目
+                    </div>
+                ) : (
+                    filteredQuestions.map((q, idx) => (
+                        <div key={q.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-start group relative shadow-sm">
+                            <div className="flex-1 pr-10 min-w-0"> 
+                                <div className="flex gap-2 mb-2 items-center">
+                                    <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">#{idx + 1}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                        q.type === QuestionType.JUDGE ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 
+                                        q.type === QuestionType.ESSAY ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' :
+                                        'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                    }`}>
+                                        {q.type === QuestionType.JUDGE ? '判断' : q.type === QuestionType.ESSAY ? '简答' : '选择'}
+                                    </span>
+                                </div>
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed mb-2">{q.content}</p>
+                                
+                                {/* Show Answer */}
+                                <div className="inline-flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30 px-2 py-1 rounded-md max-w-full">
+                                    <span className="text-[10px] font-bold text-green-600 dark:text-green-500 shrink-0">答案:</span>
+                                    <span className="text-xs font-bold text-green-700 dark:text-green-400 line-clamp-2">
+                                        {getAnswerDisplay(q)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="absolute right-3 top-3 flex flex-col gap-2">
+                                <button onClick={() => handleStartEdit(q)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg transition-colors"><Pencil className="w-4 h-4" /></button>
+                                <button onClick={() => { if(confirm('确定要删除这道题吗？')) onDelete(q.id); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            </div>
                         </div>
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed">{q.content}</p>
-                    </div>
-                    <div className="absolute right-3 top-3 flex flex-col gap-2">
-                        <button onClick={() => handleStartEdit(q)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg transition-colors"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => { if(confirm('确定要删除这道题吗？')) onDelete(q.id); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                </div>
-            ))}
-        </div>
+                    ))
+                )}
+            </div>
+        </>
       )}
 
       {activeView === 'editor' && (
