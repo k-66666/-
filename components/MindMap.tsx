@@ -5,8 +5,6 @@ import { Maximize2, Minimize2, ZoomIn, ZoomOut, Move, RefreshCw, ChevronRight, C
 interface MindMapProps {
   content: string;
   onClose?: () => void;
-  isFullscreen?: boolean;
-  toggleFullscreen?: () => void;
 }
 
 interface TreeNode {
@@ -39,10 +37,13 @@ const NODE_PADDING_Y = 12;
 const LEVEL_GAP = 80;
 const NODE_GAP_Y = 20;
 
-export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen, toggleFullscreen }) => {
+export const MindMap: React.FC<MindMapProps> = ({ content, onClose }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [root, setRoot] = useState<TreeNode | null>(null);
   
+  // Fullscreen State
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Viewport State
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 50, y: 0 }); // Initial Offset
@@ -51,18 +52,27 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
   const lastPos = useRef({ x: 0, y: 0 });
   const dragStartPos = useRef({ x: 0, y: 0 });
 
-  // Orientation State
-  const [isPortrait, setIsPortrait] = useState(false);
-
+  // Handle Native Fullscreen
   useEffect(() => {
-    const checkOrientation = () => {
-        // Only consider it portrait if width < height (mobile typical)
-        setIsPortrait(window.innerHeight > window.innerWidth);
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
     };
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    return () => window.removeEventListener('resize', checkOrientation);
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
+
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      try {
+        await containerRef.current.requestFullscreen();
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      if (document.exitFullscreen) await document.exitFullscreen();
+    }
+  };
 
   // 1. Parsing Logic (Smart Text Splitter)
   const parseContent = useCallback((text: string): TreeNode => {
@@ -309,18 +319,8 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
       if (!isDragging) return;
       e.preventDefault();
       
-      let dx = e.clientX - lastPos.current.x;
-      let dy = e.clientY - lastPos.current.y;
-
-      // Adjust for 90deg rotation in forced landscape mode
-      if (isFullscreen && isPortrait) {
-          // Screen Y+ (Down) -> Local X+
-          // Screen X+ (Right) -> Local Y- 
-          const screenDx = dx;
-          const screenDy = dy;
-          dx = screenDy;
-          dy = -screenDx;
-      }
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
 
       setPosition(p => ({ x: p.x + dx, y: p.y + dy }));
       lastPos.current = { x: e.clientX, y: e.clientY };
@@ -442,27 +442,24 @@ export const MindMap: React.FC<MindMapProps> = ({ content, onClose, isFullscreen
       return nodes;
   };
 
+  const containerClass = isFullscreen
+    ? "fixed inset-0 z-[100] flex flex-col bg-slate-50 dark:bg-slate-900"
+    : "relative w-full h-[400px] rounded-2xl border border-slate-200 dark:border-slate-800 my-2 shadow-inner bg-slate-50 dark:bg-slate-900 overflow-hidden transition-all duration-300";
+
   return (
     <div 
         ref={containerRef}
-        className={`relative overflow-hidden transition-all duration-300 bg-slate-50 dark:bg-slate-900 
-        ${isFullscreen 
-            ? isPortrait 
-                ? 'fixed top-0 left-full w-[100vh] h-[100vw] z-[100] origin-top-left rotate-90' 
-                : 'fixed inset-0 z-[100] flex flex-col'
-            : 'w-full h-[400px] rounded-2xl border border-slate-200 dark:border-slate-800 my-2 shadow-inner'}`}
+        className={containerClass}
     >
         {/* Controls Overlay */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-            {toggleFullscreen && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                    className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 active:scale-95 transition-all"
-                    title={isFullscreen ? "退出全屏" : "全屏展开"}
-                >
-                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                </button>
-            )}
+            <button 
+                onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 active:scale-95 transition-all"
+                title={isFullscreen ? "退出全屏" : "全屏展开"}
+            >
+                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
             
             {/* Mask Toggle */}
             <button 

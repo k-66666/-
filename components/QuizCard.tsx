@@ -57,7 +57,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   const [essayRevealed, setEssayRevealed] = useState(false);
   const [essayKeywords, setEssayKeywords] = useState<{text: string, hidden: boolean}[]>([]);
   const [mnemonicMode, setMnemonicMode] = useState<'text' | 'visual' | 'mindmap'>('text');
-  const [isMindMapFullscreen, setIsMindMapFullscreen] = useState(false);
   
   // New State for result card collapse
   const [isResultExpanded, setIsResultExpanded] = useState(true); 
@@ -80,7 +79,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     setIsResultExpanded(true); // Always expand result panel by default
     setShowFlashCard(false);
     setTransitionState('enter');
-    setIsMindMapFullscreen(false);
 
     // After animation delay, set to idle
     const timer = setTimeout(() => setTransitionState('idle'), 300);
@@ -538,8 +536,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                                 ) : mnemonicMode === 'mindmap' ? (
                                     <MindMap 
                                         content={String(question.correctAnswer)} 
-                                        isFullscreen={isMindMapFullscreen}
-                                        toggleFullscreen={() => setIsMindMapFullscreen(!isMindMapFullscreen)}
                                     />
                                 ) : (
                                     <VisualMnemonic content={String(question.correctAnswer)} />
