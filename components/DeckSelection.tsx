@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Book, LayoutGrid, Clock, Bell, Sparkles, Info, MessageCircle, AlertTriangle } from 'lucide-react';
 
@@ -99,9 +98,19 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
                </div>
                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">中特</h3>
                <p className="text-sm text-slate-500 dark:text-slate-400">中国特色社会主义理论体系</p>
-               <div className="mt-4 flex items-center gap-2">
-                   <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">单选题 (150题)</span>
+               
+               {/* 2025 Exam Structure Notice */}
+               <div className="mt-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/50 rounded-lg p-2.5 max-w-[90%]">
+                  <div className="flex items-start gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0 animate-pulse" />
+                      <p className="text-[10px] leading-relaxed text-red-700 dark:text-red-300 font-medium">
+                          <span className="font-bold">2025试卷结构：</span>
+                          单选30道(1分)，多选5道(2分)，简答2道(5分)，论述2道(15分)，材料1道(20分)
+                      </p>
+                  </div>
                </div>
+
+               
            </div>
         </button>
       </div>
@@ -120,18 +129,19 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
             <div className="flex items-center justify-between mb-3 relative z-10">
                 <div className="flex items-center gap-2">
                     <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm">
-                        v6.0
+                        v6.1
                     </span>
-                    <span className="text-xs text-slate-400 font-mono font-medium">2025-12-09 12:17</span>
+                    <span className="text-xs text-slate-400 font-mono font-medium">2025-12-09</span>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
                     <Sparkles className="w-3 h-3 fill-current animate-pulse" />
-                    <span>重大更新</span>
+                    <span>重要通知</span>
                 </div>
             </div>
             
             <div className="relative z-10">
                 <ul className="space-y-2.5">
+                    {/* Removed duplicated announcement */}
                     <li className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
                         <span className="leading-relaxed">新增简答题 <strong>思维导图 (MindMap)</strong> 与 <strong>星图记忆</strong> 模式，助记更高效。</span>
@@ -170,7 +180,7 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
                             <MessageCircle className="w-3.5 h-3.5" /> 联系作者
                          </h3>
                          <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            <p className="mb-1">题目有误、新增题库或改进功能建议，请联系微信：</p>
+                            <p className="mb-1">感谢每一位用户，精力有限，题目有误、新增题库或改进功能建议，请联系微信：</p>
                             <div className="flex flex-wrap gap-2 mt-1.5">
                                 <span className="font-mono font-bold select-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-700 dark:text-slate-300">
                                     k先生：17513607707
