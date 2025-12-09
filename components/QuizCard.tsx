@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, BookOpen, AlertTriangle, Pin, PinOff, Zap, ChevronDown, ChevronUp, AlertOctagon, Eye, EyeOff, Gamepad2, ThumbsUp, XOctagon, RotateCcw, List, Search, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, BookOpen, AlertTriangle, Pin, PinOff, Zap, ChevronDown, ChevronUp, AlertOctagon, Eye, EyeOff, Gamepad2, ThumbsUp, XOctagon, RotateCcw, List, Search, ArrowLeft, Network } from 'lucide-react';
 import { VisualMnemonic } from './VisualMnemonic';
+import { MindMap } from './MindMap';
 import { playCorrect, playWrong } from '../utils/sound';
 
 interface QuizCardProps {
@@ -55,7 +56,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [essayRevealed, setEssayRevealed] = useState(false);
   const [essayKeywords, setEssayKeywords] = useState<{text: string, hidden: boolean}[]>([]);
-  const [mnemonicMode, setMnemonicMode] = useState<'text' | 'visual'>('text');
+  const [mnemonicMode, setMnemonicMode] = useState<'text' | 'visual' | 'mindmap'>('text');
+  const [isMindMapFullscreen, setIsMindMapFullscreen] = useState(false);
   
   // New State for result card collapse
   const [isResultExpanded, setIsResultExpanded] = useState(true); 
@@ -78,6 +80,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     setIsResultExpanded(true); // Always expand result panel by default
     setShowFlashCard(false);
     setTransitionState('enter');
+    setIsMindMapFullscreen(false);
 
     // After animation delay, set to idle
     const timer = setTimeout(() => setTransitionState('idle'), 300);
@@ -318,7 +321,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   );
 
   // New Full Screen Feedback Component (ResultFlashCard)
-  // Modified: Mnemonic (if exists) is now visually swapped to be more prominent/higher than question text
   const ResultFlashCard = () => {
       const content = getCorrectAnswerContent();
       const isLongText = content.length > 20;
@@ -390,7 +392,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       {flashType === 'red' && effectsEnabled && <div className="absolute inset-0 z-10 animate-flash-red pointer-events-none" />}
       {showConfetti && effectsEnabled && <Confetti />}
       
-      {/* Full Screen Flash Card - ONLY for wrong answers (when hasAnswered is true) AND effects are enabled */}
+      {/* Full Screen Flash Card - ONLY for wrong answers */}
       {showFlashCard && hasAnswered && !isCorrectAnswer && effectsEnabled && <ResultFlashCard />}
 
       {/* Top Stats Bar */}
@@ -477,15 +479,21 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                                 <div className="flex bg-white dark:bg-slate-800 rounded-lg p-0.5 border border-indigo-100 dark:border-slate-700">
                                     <button 
                                         onClick={() => setMnemonicMode('text')}
-                                        className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${mnemonicMode === 'text' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-500'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${mnemonicMode === 'text' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-500'}`}
                                     >
                                         文本
                                     </button>
                                     <button 
                                         onClick={() => setMnemonicMode('visual')}
-                                        className={`px-3 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${mnemonicMode === 'visual' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-500'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${mnemonicMode === 'visual' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-500'}`}
                                     >
                                         <Gamepad2 className="w-3 h-3" /> 星图
+                                    </button>
+                                    <button 
+                                        onClick={() => setMnemonicMode('mindmap')}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${mnemonicMode === 'mindmap' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-500'}`}
+                                    >
+                                        <Network className="w-3 h-3" /> 导图
                                     </button>
                                 </div>
                             </div>
@@ -518,6 +526,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                                             ))}
                                         </div>
                                     </>
+                                ) : mnemonicMode === 'mindmap' ? (
+                                    <MindMap 
+                                        content={String(question.correctAnswer)} 
+                                        isFullscreen={isMindMapFullscreen}
+                                        toggleFullscreen={() => setIsMindMapFullscreen(!isMindMapFullscreen)}
+                                    />
                                 ) : (
                                     <VisualMnemonic content={String(question.correctAnswer)} />
                                 )}

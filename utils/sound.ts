@@ -54,7 +54,6 @@ export const playWrong = () => {
   gain.connect(ctx.destination);
 
   // Softer "Error" sound using Triangle wave instead of harsh Sawtooth
-  // A descending pitch from 300Hz to 100Hz mimics a soft "thud" or "bonk"
   osc.type = 'triangle';
   osc.frequency.setValueAtTime(300, ctx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.25);
@@ -83,4 +82,26 @@ export const playClick = () => {
 
   osc.start();
   osc.stop(ctx.currentTime + 0.05);
+};
+
+// Play a specific musical tone for combos
+export const playTone = (freq: number, type: OscillatorType = 'sine', duration: number = 0.3) => {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  
+  // Envelope
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+  osc.start();
+  osc.stop(ctx.currentTime + duration);
 };
