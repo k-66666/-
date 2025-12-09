@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
-import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, BookOpen, AlertTriangle, Pin, PinOff, Zap, ChevronDown, ChevronUp, AlertOctagon, Eye, EyeOff, Gamepad2, ThumbsUp, XOctagon } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BrainCircuit, BookOpen, AlertTriangle, Pin, PinOff, Zap, ChevronDown, ChevronUp, AlertOctagon, Eye, EyeOff, Gamepad2, ThumbsUp, XOctagon, RotateCcw, List, Search, ArrowLeft } from 'lucide-react';
 import { VisualMnemonic } from './VisualMnemonic';
+import { playCorrect, playWrong } from '../utils/sound';
 
 interface QuizCardProps {
   question: Question;
@@ -11,10 +13,16 @@ interface QuizCardProps {
   totalCount: number;
   mistakeCount: number;
   isPinned: boolean;
+  roundNumber: number;
+  accuracy: number;
+  soundEnabled: boolean;
+  effectsEnabled: boolean;
   onAnswer: (isCorrect: boolean) => void;
   onNext: () => void;
+  onPrevious?: () => void;
   onRetry: () => void;
   onTogglePin: () => void;
+  onShowList?: () => void;
   isMistakeMode?: boolean;
 }
 
@@ -26,10 +34,16 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     totalCount, 
     mistakeCount, 
     isPinned,
+    roundNumber,
+    accuracy,
+    soundEnabled,
+    effectsEnabled,
     onAnswer, 
     onNext, 
+    onPrevious,
     onRetry, 
     onTogglePin, 
+    onShowList, 
     isMistakeMode 
 }) => {
   const [selectedOptions, setSelectedOptions] = useState<any[] | boolean | null>(null);
@@ -44,7 +58,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   const [mnemonicMode, setMnemonicMode] = useState<'text' | 'visual'>('text');
   
   // New State for result card collapse
-  const [isResultExpanded, setIsResultExpanded] = useState(true);
+  const [isResultExpanded, setIsResultExpanded] = useState(true); 
+  const [showFlashCard, setShowFlashCard] = useState(false);
 
   // Transition State for Fly In / Fly Out
   const [transitionState, setTransitionState] = useState<'enter' | 'idle' | 'exit'>('enter');
@@ -60,7 +75,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     setIsCorrectAnswer(false);
     setEssayRevealed(false);
     setMnemonicMode('text');
-    setIsResultExpanded(true);
+    setIsResultExpanded(true); // Always expand result panel by default
+    setShowFlashCard(false);
     setTransitionState('enter');
 
     // After animation delay, set to idle
@@ -79,17 +95,25 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
   // Handle Question Transitions
   const handleNextWithAnim = () => {
-    setTransitionState('exit');
-    setTimeout(() => {
-        onNext();
-    }, 300); // Match animation duration
+    if (effectsEnabled) {
+      setTransitionState('exit');
+      setTimeout(() => {
+          onNext();
+      }, 300); // Match animation duration
+    } else {
+      onNext();
+    }
   };
 
   const handleRetryWithAnim = () => {
+    if (effectsEnabled) {
       setTransitionState('exit');
       setTimeout(() => {
           onRetry();
       }, 300);
+    } else {
+      onRetry();
+    }
   };
 
   const isSingleChoice = useMemo(() => {
@@ -160,9 +184,19 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       setHasAnswered(true);
       setIsCorrectAnswer(passed);
       onAnswer(passed);
+      
       if (passed) {
-          setShowConfetti(true);
-          setFlashType('green');
+          if (soundEnabled) playCorrect();
+          if (effectsEnabled) {
+            setShowConfetti(true);
+            setFlashType('green');
+          }
+      } else {
+          if (soundEnabled) playWrong();
+          if (effectsEnabled) {
+            setShowFlashCard(true); // Wrong essay shows card
+            setTimeout(() => setShowFlashCard(false), 4000);
+          }
       }
   };
 
@@ -174,13 +208,21 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       onAnswer(isCorrect);
 
       if (isCorrect) {
-        setShowConfetti(true);
-        setFlashType('green');
+        if (soundEnabled) playCorrect();
+        if (effectsEnabled) {
+            setShowConfetti(true);
+            setFlashType('green');
+        }
       } else {
-        setIsShaking(true);
-        setFlashType('red');
-        setTimeout(() => setIsShaking(false), 400); 
-        setShowMnemonic(true);
+        if (soundEnabled) playWrong();
+        if (effectsEnabled) {
+            setShowFlashCard(true);
+            setIsShaking(true);
+            setFlashType('red');
+            setTimeout(() => setIsShaking(false), 400); 
+            setTimeout(() => setShowFlashCard(false), 4000);
+        }
+        setShowMnemonic(true); // Always show mnemonic on wrong
       }
   };
 
@@ -220,6 +262,30 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     return `${base} bg-slate-50 dark:bg-slate-950 border-transparent text-slate-300 dark:text-slate-800 opacity-40 grayscale`;
   };
 
+  const getCorrectAnswerContent = () => {
+    if (question.type === QuestionType.JUDGE) {
+        return question.correctAnswer ? '正确' : '错误';
+    }
+    if (question.type === QuestionType.ESSAY) {
+        return String(question.correctAnswer);
+    }
+    
+    // Choice: Ensure we work with string[]
+    const val = question.correctAnswer;
+    const correctKeys: string[] = Array.isArray(val) ? val : (typeof val === 'string' ? [val] : []);
+    
+    if (correctKeys.length === 0) return '';
+    
+    if (!question.options) return correctKeys.join('');
+
+    // Map keys (A, B) to text
+    return correctKeys.map(key => {
+        const idx = key.charCodeAt(0) - 65;
+        // Include letter in the flash card as well for better context
+        return question.options && question.options[idx] ? `${key}. ${question.options[idx]}` : key;
+    }).join('；'); // Separator
+  };
+
   const getCorrectAnswerText = () => {
       if (question.type === QuestionType.JUDGE) {
           return question.correctAnswer ? '正确 (√)' : '错误 (×)';
@@ -251,64 +317,132 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     </div>
   );
 
-  const FeedbackStamp = () => (
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 animate-stamp">
-          <div className={`rounded-full p-8 shadow-2xl backdrop-blur-sm border-8 ${isCorrectAnswer ? 'bg-green-100/90 border-green-500 text-green-600' : 'bg-red-100/90 border-red-500 text-red-600'}`}>
-              {isCorrectAnswer ? (
-                  <div className="flex flex-col items-center">
-                    <ThumbsUp className="w-24 h-24 stroke-[3]" />
-                    <span className="text-3xl font-black mt-2">Bingo!</span>
-                  </div>
-              ) : (
-                  <div className="flex flex-col items-center">
-                    <XOctagon className="w-24 h-24 stroke-[3]" />
-                    <span className="text-3xl font-black mt-2">Oops!</span>
-                  </div>
-              )}
-          </div>
-      </div>
-  );
+  // New Full Screen Feedback Component (ResultFlashCard)
+  // Modified: Mnemonic (if exists) is now visually swapped to be more prominent/higher than question text
+  const ResultFlashCard = () => {
+      const content = getCorrectAnswerContent();
+      const isLongText = content.length > 20;
+
+      return (
+        <div 
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 backdrop-blur-xl transition-all duration-500 animate-in fade-in zoom-in-95 bg-red-500/10"
+            onClick={() => setShowFlashCard(false)}
+        >
+            <div className="w-full max-w-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl shadow-2xl p-6 border-2 flex flex-col items-center text-center gap-4 relative overflow-hidden border-red-400/50 shadow-red-500/20">
+                
+                {/* Icon */}
+                <div className="p-4 rounded-full shadow-lg bg-red-100 text-red-600 shrink-0">
+                    <AlertOctagon className="w-10 h-10" />
+                </div>
+
+                {/* Answer Box */}
+                <div className="w-full bg-red-50 dark:bg-red-900/20 p-5 rounded-2xl border border-red-100 dark:border-red-800/50">
+                    <h3 className="text-xs font-bold uppercase tracking-widest mb-3 text-red-500">
+                        正确答案是
+                    </h3>
+                    <div className={`font-black text-slate-900 dark:text-white leading-tight break-words
+                        ${isLongText ? 'text-lg text-left' : 'text-3xl'}`}>
+                        {content}
+                    </div>
+                </div>
+
+                {/* Mnemonic Prominent Position */}
+                {question.mnemonic && (
+                     <div className="w-full animate-in slide-in-from-bottom-2 duration-500 delay-100">
+                         <div className="flex items-center gap-2 mb-2 justify-center">
+                            <BrainCircuit className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">巧记速记</span>
+                         </div>
+                         <div className="text-lg font-bold text-amber-800 dark:text-amber-100 leading-relaxed bg-amber-100 dark:bg-amber-900/40 p-4 rounded-xl shadow-sm border border-amber-200 dark:border-amber-700/30">
+                            {question.mnemonic}
+                         </div>
+                     </div>
+                )}
+
+                {/* Question Context (Moved to bottom as requested/inferred) */}
+                <div className="mt-2 text-sm leading-snug text-slate-500 dark:text-slate-400 px-2 font-medium border-t border-slate-200 dark:border-slate-800 pt-3 w-full">
+                    <span className="text-xs font-bold opacity-70 block mb-1">题目：</span>
+                    {question.content}
+                </div>
+            </div>
+        </div>
+      );
+  };
 
   const showRetry = isMistakeMode && mistakeCount <= 1 && !isCorrectAnswer && hasAnswered;
 
   // Animation Classes
   const containerClass = `flex flex-col h-full relative z-0 overflow-hidden bg-slate-50 dark:bg-slate-950 
-    ${transitionState === 'enter' ? 'animate-slide-in-right opacity-100' : ''}
-    ${transitionState === 'exit' ? 'animate-slide-out-left opacity-0' : ''}`;
+    ${effectsEnabled && transitionState === 'enter' ? 'animate-slide-in-right opacity-100' : ''}
+    ${effectsEnabled && transitionState === 'exit' ? 'animate-slide-out-left opacity-0' : ''}`;
 
   return (
     <div className={containerClass}>
-      {flashType === 'green' && <div className="absolute inset-0 z-10 animate-flash-green pointer-events-none" />}
-      {flashType === 'red' && <div className="absolute inset-0 z-10 animate-flash-red pointer-events-none" />}
-      {showConfetti && <Confetti />}
+      {/* Background Ambience if Effects Enabled */}
+      {effectsEnabled && (
+         <div className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-20 overflow-hidden">
+             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-400/10 blur-3xl animate-pulse" />
+             <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/10 blur-3xl animate-pulse delay-700" />
+         </div>
+      )}
+
+      {flashType === 'green' && effectsEnabled && <div className="absolute inset-0 z-10 animate-flash-green pointer-events-none" />}
+      {flashType === 'red' && effectsEnabled && <div className="absolute inset-0 z-10 animate-flash-red pointer-events-none" />}
+      {showConfetti && effectsEnabled && <Confetti />}
       
-      {/* Visual Feedback Stamp */}
-      {hasAnswered && <FeedbackStamp />}
+      {/* Full Screen Flash Card - ONLY for wrong answers (when hasAnswered is true) AND effects are enabled */}
+      {showFlashCard && hasAnswered && !isCorrectAnswer && effectsEnabled && <ResultFlashCard />}
 
       {/* Top Stats Bar */}
-      <div className="flex-none pt-1 pb-2 px-1">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <div className="flex gap-4">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>{answeredCount} / {totalCount}</span>
-                </div>
-                <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-lg ${mistakeCount > 0 ? 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30' : 'text-slate-400 bg-slate-100 dark:bg-slate-800'}`}>
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>错题 {mistakeCount}</span>
+      <div className="flex-none pt-2 pb-2 px-1 relative z-10">
+          <div className="flex items-center justify-between gap-3 mb-3 px-1">
+            <div className="flex gap-2">
+                {onPrevious && (
+                    <button 
+                        onClick={onPrevious}
+                        className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-500 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                        title="上一题"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </button>
+                )}
+                
+                <div className="flex flex-col">
+                     <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">第 {roundNumber} 轮</span>
+                        <div className="w-px h-3 bg-slate-300 dark:bg-slate-700" />
+                        <span className={`text-xs font-bold ${accuracy >= 80 ? 'text-green-600' : accuracy >= 60 ? 'text-blue-600' : 'text-orange-600'}`}>
+                            正确率 {accuracy}%
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-1.5 mt-1">
+                        <div className="h-1.5 w-16 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${masteryPercentage}%` }} />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400">{answeredCount}/{totalCount}</span>
+                     </div>
                 </div>
             </div>
-            <div className={`flex items-center gap-1.5 font-bold transition-transform duration-300 ${streak > 0 ? 'scale-110' : ''}`}>
-                <span className={`text-sm ${streak > 0 ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`}>🔥 {streak}</span>
+
+            <div className="flex gap-2">
+                 {onShowList && (
+                    <button 
+                        onClick={onShowList}
+                        className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        title="展开全部题目"
+                    >
+                        <List className="w-4 h-4" />
+                    </button>
+                 )}
+                 <div className={`flex items-center gap-1 px-2 py-1.5 rounded-lg border border-transparent ${streak > 0 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-100 text-slate-400'}`}>
+                    <span className="text-xs font-bold">🔥 {streak}</span>
+                 </div>
             </div>
-          </div>
-          <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all duration-700" style={{ width: `${masteryPercentage}%` }} />
           </div>
       </div>
 
       {/* MAIN SPLIT VIEW: Question (Top) vs Options (Bottom) */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative z-10">
           
           {/* Top: Question */}
           <div className="flex-[0_0_auto] max-h-[40%] min-h-[120px] overflow-y-auto px-2 pb-4 pt-2 border-b border-slate-100 dark:border-slate-800/50 shadow-sm z-10 bg-slate-50 dark:bg-slate-950">
@@ -325,7 +459,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                         </span>
                     )}
                 </div>
-                <h2 className={`text-lg font-bold leading-relaxed text-slate-800 dark:text-slate-100 ${isShaking ? 'animate-shake text-red-600 dark:text-red-400' : ''}`}>
+                <h2 className={`text-lg font-bold leading-relaxed text-slate-800 dark:text-slate-100 ${isShaking && effectsEnabled ? 'animate-shake text-red-600 dark:text-red-400' : ''}`}>
                     {question.content}
                 </h2>
           </div>
@@ -438,21 +572,25 @@ export const QuizCard: React.FC<QuizCardProps> = ({
           </div>
       </div>
 
-      {/* Result Panel (Bottom Sheet) */}
+      {/* Result Panel (Bottom Sheet) - Always available for correct answers */}
       {hasAnswered && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 z-30 animate-spring-up">
-           <div className={`bg-white dark:bg-slate-900 rounded-2xl shadow-[0_10px_60px_-15px_rgba(0,0,0,0.3)] border-2 ${isCorrectAnswer ? 'border-green-400 dark:border-green-900' : 'border-red-400 dark:border-red-900'} p-5 flex flex-col transition-all duration-300`} style={{ maxHeight: isResultExpanded ? '60vh' : 'auto' }}>
+        <div className={`absolute bottom-0 left-0 right-0 z-30 pointer-events-none ${effectsEnabled ? 'animate-spring-up' : ''}`}>
+           <div className={`bg-white dark:bg-slate-900 rounded-t-2xl shadow-[0_10px_60px_-15px_rgba(0,0,0,0.3)] border-x-2 border-t-2 ${isCorrectAnswer ? 'border-green-400 dark:border-green-900' : 'border-red-400 dark:border-red-900'} p-5 flex flex-col transition-all duration-300 pointer-events-auto`} 
+                style={{ 
+                    maxHeight: isResultExpanded ? '60vh' : 'auto',
+                    transform: isResultExpanded ? 'translateY(0)' : 'translateY(calc(100% - 70px))' // Collapses down to 70px
+                }}>
                
                {/* Drag Handle - Click to Toggle */}
                <div 
-                 className="w-full flex justify-center pb-4 -mt-2 cursor-pointer touch-manipulation"
+                 className="w-full flex justify-center pb-4 -mt-2 cursor-pointer touch-manipulation group"
                  onClick={() => setIsResultExpanded(!isResultExpanded)}
                >
-                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors" />
+                 <div className={`w-12 h-1.5 rounded-full transition-colors ${isResultExpanded ? 'bg-slate-200 dark:bg-slate-700' : 'bg-blue-400 dark:bg-blue-600'}`} />
                </div>
 
                {/* Header Section */}
-               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+               <div className="flex items-center justify-between mb-2 shrink-0">
                    <div className={`flex items-center gap-2 font-black text-xl ${isCorrectAnswer ? 'text-green-500' : 'text-red-500'}`}>
                         {isCorrectAnswer ? <><CheckCircle2 className="w-6 h-6" /><span>回答正确!</span></> : <><AlertOctagon className="w-6 h-6" /><span>回答错误</span></>}
                    </div>
@@ -472,44 +610,68 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                         </button>
                    </div>
                </div>
+               
+               {/* Always visible action buttons when collapsed, or bottom when expanded */}
+               {!isResultExpanded && (
+                   <div className="flex gap-3 mt-2 shrink-0 animate-in fade-in relative -top-1">
+                        {showRetry ? (
+                            <button onClick={handleRetryWithAnim} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-sm">
+                                <ArrowRight className="w-4 h-4 rotate-180" /> <span>重试</span>
+                            </button>
+                        ) : (
+                            <button onClick={handleNextWithAnim} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-sm">
+                                <span>下一题</span> <ArrowRight className="w-4 h-4" />
+                            </button>
+                        )}
+                   </div>
+               )}
 
                {/* Collapsible Content Section */}
-               <div className={`overflow-y-auto transition-all duration-300 ${isResultExpanded ? 'opacity-100 flex-1' : 'h-0 opacity-0 overflow-hidden'}`}>
-                    {(!isCorrectAnswer || question.type === QuestionType.ESSAY) && (
-                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30">
-                            <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">正确答案</div>
-                            <div className="text-lg font-black text-green-700 dark:text-green-300 whitespace-pre-wrap">
-                                    {question.type === QuestionType.JUDGE 
-                                        ? (question.correctAnswer ? '正确 (√)' : '错误 (×)') 
-                                        : question.type === QuestionType.ESSAY 
-                                            ? String(question.correctAnswer)
-                                            : (getCorrectAnswerText() as string[]).join(' ')}
-                            </div>
+               <div className={`overflow-y-auto transition-all duration-300 space-y-4 ${isResultExpanded ? 'opacity-100 flex-1 mt-2' : 'h-0 opacity-0 overflow-hidden'}`}>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30">
+                        <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">正确答案</div>
+                        <div className="text-lg font-black text-green-700 dark:text-green-300 whitespace-pre-wrap">
+                                {question.type === QuestionType.JUDGE 
+                                    ? (question.correctAnswer ? '正确 (√)' : '错误 (×)') 
+                                    : question.type === QuestionType.ESSAY 
+                                        ? String(question.correctAnswer)
+                                        : (getCorrectAnswerText() as string[]).join(' ')}
                         </div>
-                    )}
+                    </div>
 
                     {question.mnemonic && (
-                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 flex gap-3 border border-amber-100 dark:border-amber-800/30">
-                            <BrainCircuit className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
-                            <div>
-                                <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">巧记 Mnemonic</div>
-                                <div className="text-sm font-bold text-amber-900 dark:text-amber-100">{question.mnemonic}</div>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 flex gap-3 border border-amber-100 dark:border-amber-800/30 shadow-sm">
+                            <BrainCircuit className="w-6 h-6 text-amber-500 mt-1 shrink-0" />
+                            <div className="flex-1">
+                                <div className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">巧记 Mnemonic</div>
+                                {/* Increased font size for better visibility */}
+                                <div className="text-lg font-bold text-amber-900 dark:text-amber-100 leading-snug">{question.mnemonic}</div>
                             </div>
                         </div>
                     )}
-               </div>
 
-               {/* Footer Actions - Always Visible */}
-               <div className="flex gap-3 mt-2 shrink-0">
-                    {showRetry ? (
-                        <button onClick={handleRetryWithAnim} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <ArrowRight className="w-5 h-5 rotate-180" /> <span>重试</span>
-                        </button>
-                    ) : (
-                        <button onClick={handleNextWithAnim} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <span>下一题</span> <ArrowRight className="w-5 h-5" />
-                        </button>
+                    {question.analysis && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 flex gap-3 border border-blue-100 dark:border-blue-800/30">
+                            <BookOpen className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                            <div>
+                                <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">解析 Analysis</div>
+                                <div className="text-sm font-medium text-blue-900 dark:text-blue-100 leading-relaxed">{question.analysis}</div>
+                            </div>
+                        </div>
                     )}
+
+                    {/* Buttons inside expanded view */}
+                    <div className="flex gap-3 mt-4 shrink-0 pb-2">
+                        {showRetry ? (
+                            <button onClick={handleRetryWithAnim} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <ArrowRight className="w-5 h-5 rotate-180" /> <span>重试</span>
+                            </button>
+                        ) : (
+                            <button onClick={handleNextWithAnim} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <span>下一题</span> <ArrowRight className="w-5 h-5" />
+                            </button>
+                        )}
+                   </div>
                </div>
            </div>
         </div>

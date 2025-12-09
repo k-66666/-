@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UserProgress, Question, QuestionType, QuestionStat } from '../types';
 import { Trophy, Target, AlertCircle, Zap, BarChart3, ArrowUpRight, Play, RotateCw, RefreshCw, BrainCircuit, Activity } from 'lucide-react';
@@ -77,7 +76,15 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
           return '查看详情';
       }
       if (Array.isArray(q.correctAnswer)) {
-          return (q.correctAnswer as string[]).join('、');
+          const letters = q.correctAnswer as string[];
+          if (q.options && q.options.length > 0) {
+              return letters.map(l => {
+                  const idx = l.charCodeAt(0) - 65;
+                  const text = q.options![idx] || '';
+                  return `${l}. ${text}`;
+              }).join('; ');
+          }
+          return letters.join('、');
       }
       return String(q.correctAnswer);
   };
@@ -209,10 +216,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ progress, totalQuestions, 
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 mb-1">
                               {item.q?.content}
                           </p>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-2">
-                              <span>错 {item.failures} 次</span>
-                              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                              <span className="text-green-600 dark:text-green-400 truncate max-w-[100px]">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-2 w-full">
+                              <span className="shrink-0">错 {item.failures} 次</span>
+                              <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                              <span className="text-green-600 dark:text-green-400 truncate flex-1">
                                 答案: {getAnswerDisplay(item.q!)}
                               </span>
                           </p>

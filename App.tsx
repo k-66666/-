@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuestionBank } from './hooks/useQuestionBank';
 import { Layout } from './components/Layout';
@@ -8,6 +7,7 @@ import { StatsView } from './components/StatsView';
 import { QuestionManager } from './components/QuestionManager';
 import { DeckSelection } from './components/DeckSelection';
 import { SubDeckSelection, SubDeckConfig } from './components/SubDeckSelection';
+import { QuestionList } from './components/QuestionList';
 import { Question, QuestionStat } from './types';
 import { RotateCcw, AlertTriangle, CheckCircle2, Trophy } from 'lucide-react';
 
@@ -20,10 +20,20 @@ const App: React.FC = () => {
   const [subDeckConfig, setSubDeckConfig] = useState<SubDeckConfig | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [quizKey, setQuizKey] = useState(0);
+
+  // Settings State
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [effectsEnabled, setEffectsEnabled] = useState(true);
   
-  // Split state for question persistence
+  // Question State
   const [currentQuizQ, setCurrentQuizQ] = useState<Question | null>(null);
   const [currentMistakeQ, setCurrentMistakeQ] = useState<Question | null>(null);
+
+  // History Stack for Previous Button
+  const [history, setHistory] = useState<Question[]>([]);
+  // Session stats for real-time accuracy (reset on deck change)
+  const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
+  const [showQuestionList, setShowQuestionList] = useState(false);
 
   // Filtered Questions based on Category AND SubDeck Config
   const questions = useMemo(() => {
@@ -72,11 +82,16 @@ const App: React.FC = () => {
       }).length;
   }, [questions, progress.questionStats, currentRoundIndex, selectedCategory]);
 
-  // Theme Init
+  // Init Theme & Settings
   useEffect(() => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setTheme('dark');
     }
+    const savedSound = localStorage.getItem('dm_sound');
+    if (savedSound !== null) setSoundEnabled(savedSound === 'true');
+    
+    const savedEffects = localStorage.getItem('dm_effects');
+    if (savedEffects !== null) setEffectsEnabled(savedEffects === 'true');
   }, []);
 
   useEffect(() => {
@@ -89,6 +104,22 @@ const App: React.FC = () => {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const toggleSound = () => {
+      setSoundEnabled(prev => {
+          const newVal = !prev;
+          localStorage.setItem('dm_sound', String(newVal));
+          return newVal;
+      });
+  };
+
+  const toggleEffects = () => {
+      setEffectsEnabled(prev => {
+          const newVal = !prev;
+          localStorage.setItem('dm_effects', String(newVal));
+          return newVal;
+      });
   };
 
   const mistakeQuestions = useMemo(() => {
@@ -181,10 +212,18 @@ const App: React.FC = () => {
   const handleAnswer = (isCorrect: boolean) => {
     if (currentQuestion) {
       recordAttempt(currentQuestion.id, isCorrect);
+      setSessionStats(prev => ({
+          correct: prev.correct + (isCorrect ? 1 : 0),
+          total: prev.total + 1
+      }));
     }
   };
 
   const handleNext = () => {
+    if (currentQuestion) {
+        setHistory(prev => [...prev, currentQuestion]);
+    }
+
     if (isMistakeMode) {
         const next = getNextMistakeQuestion();
         setCurrentMistakeQ(next);
@@ -198,6 +237,22 @@ const App: React.FC = () => {
         }
     }
     setQuizKey(k => k + 1);
+  };
+
+  const handlePrevious = () => {
+      if (history.length === 0) return;
+      
+      const prevQ = history[history.length - 1];
+      const newHistory = history.slice(0, -1);
+      
+      setHistory(newHistory);
+      
+      if (isMistakeMode) {
+          setCurrentMistakeQ(prevQ);
+      } else {
+          setCurrentQuizQ(prevQ);
+      }
+      setQuizKey(k => k + 1);
   };
 
   const handleRetry = () => {
@@ -215,6 +270,14 @@ const App: React.FC = () => {
       setQuizKey(k => k + 1);
   };
 
+  const handleListSelect = (q: Question) => {
+      // Jump to this question
+      setCurrentQuizQ(q);
+      setActiveTab('quiz');
+      setShowQuestionList(false);
+      setQuizKey(k => k + 1);
+  }
+
   const handleCompleteRound = () => {
       if (selectedCategory) {
           completeRound(selectedCategory);
@@ -226,17 +289,21 @@ const App: React.FC = () => {
   const handleTabChange = (tab: 'quiz' | 'mistakes' | 'stats' | 'manage') => {
       if (tab === activeTab) return; // Prevent double-click reset
       setActiveTab(tab);
-      // NOTE: We do NOT reset currentQuestion here. This preserves the "Current Question" state.
   };
 
   const handleSubDeckSelect = (config: SubDeckConfig | null) => {
       setSubDeckConfig(config);
       setCurrentQuizQ(null); // Reset current question when changing range
       setCurrentMistakeQ(null);
+      setHistory([]); // Clear history on deck change
+      setSessionStats({ correct: 0, total: 0 }); // Reset session stats
       setActiveTab('quiz');
   };
 
   const masteryPercentage = questions.length > 0 ? Math.round((answeredInCurrentRoundCount / questions.length) * 100) : 0;
+  
+  // Real-time accuracy calculation
+  const currentAccuracy = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0;
 
   if (loading) {
     return <div className="h-screen flex items-center justify-center text-blue-600 font-bold dark:bg-slate-950 dark:text-blue-400">数据加载中...</div>;
@@ -250,10 +317,14 @@ const App: React.FC = () => {
             onTabChange={() => {}} 
             theme={theme}
             toggleTheme={toggleTheme}
+            soundEnabled={soundEnabled}
+            toggleSound={toggleSound}
+            effectsEnabled={effectsEnabled}
+            toggleEffects={toggleEffects}
             title="华水期中神器"
             showNav={false}
         >
-            <DeckSelection onSelect={(cat) => { setSelectedCategory(cat); setSubDeckConfig(null); setActiveTab('quiz'); setCurrentQuizQ(null); setCurrentMistakeQ(null); }} />
+            <DeckSelection onSelect={(cat) => { setSelectedCategory(cat); setSubDeckConfig(null); setActiveTab('quiz'); setCurrentQuizQ(null); setCurrentMistakeQ(null); setHistory([]); setSessionStats({correct:0, total:0}); }} />
         </Layout>
       );
   }
@@ -266,6 +337,10 @@ const App: React.FC = () => {
             onTabChange={() => {}} 
             theme={theme}
             toggleTheme={toggleTheme}
+            soundEnabled={soundEnabled}
+            toggleSound={toggleSound}
+            effectsEnabled={effectsEnabled}
+            toggleEffects={toggleEffects}
             title={selectedCategory}
             showNav={false}
         >
@@ -282,11 +357,16 @@ const App: React.FC = () => {
 
   // 3. Main App Layout
   return (
+    <>
     <Layout 
       activeTab={activeTab} 
       onTabChange={handleTabChange}
       theme={theme}
       toggleTheme={toggleTheme}
+      soundEnabled={soundEnabled}
+      toggleSound={toggleSound}
+      effectsEnabled={effectsEnabled}
+      toggleEffects={toggleEffects}
       title={subDeckConfig ? `${subDeckConfig.label}` : selectedCategory}
       onBack={selectedCategory === '中特' ? () => setSubDeckConfig(null) : () => { setSelectedCategory(null); setCurrentQuizQ(null); setCurrentMistakeQ(null); }}
     >
@@ -314,10 +394,16 @@ const App: React.FC = () => {
               totalCount={questions.length}
               mistakeCount={mistakeQuestions.length}
               isPinned={progress.pinnedMistakes?.includes(currentQuestion.id) || false}
+              roundNumber={currentRoundDisplay}
+              accuracy={currentAccuracy}
+              soundEnabled={soundEnabled}
+              effectsEnabled={effectsEnabled}
               onAnswer={handleAnswer} 
               onNext={handleNext}
+              onPrevious={history.length > 0 ? handlePrevious : undefined}
               onRetry={handleRetry}
               onTogglePin={() => handleTogglePin(currentQuestion.id)}
+              onShowList={() => setShowQuestionList(true)}
               isMistakeMode={isMistakeMode}
             />
           ) : (
@@ -393,6 +479,16 @@ const App: React.FC = () => {
             />
       </div>
     </Layout>
+    
+    {showQuestionList && (
+        <QuestionList 
+            questions={questions}
+            progress={progress}
+            onSelect={handleListSelect}
+            onClose={() => setShowQuestionList(false)}
+        />
+    )}
+    </>
   );
 };
 
