@@ -484,6 +484,7 @@ const App: React.FC = () => {
         <QuestionList 
             questions={questions}
             progress={progress}
+            activeId={currentQuestion?.id}
             onSelect={handleListSelect}
             onClose={() => setShowQuestionList(false)}
         />

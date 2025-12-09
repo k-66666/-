@@ -427,6 +427,15 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             </div>
 
             <div className="flex gap-2">
+                 {/* Next Button Added Here */}
+                 <button 
+                    onClick={onNext}
+                    className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-500 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                    title="下一题"
+                 >
+                    <ArrowRight className="w-4 h-4" />
+                 </button>
+
                  {onShowList && (
                     <button 
                         onClick={onShowList}
@@ -583,6 +592,23 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                         )}
                     </div>
                 )}
+
+                {/* New Bottom Navigation Row */}
+                <div className="flex items-center justify-between gap-4 mt-8 pb-4 opacity-80">
+                    <button 
+                        onClick={onPrevious} 
+                        disabled={!onPrevious}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> 上一题
+                    </button>
+                    <button 
+                        onClick={onNext} 
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-sm font-bold"
+                    >
+                        下一题 <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
           </div>
       </div>
 
