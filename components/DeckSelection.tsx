@@ -190,15 +190,15 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
                 <ul className="space-y-3">
                 <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">优化了加载性能，提升访问速度 <span className="text-blue-600 dark:text-blue-400 font-bold"></span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
+                        <span className="leading-relaxed font-medium">优化了加载性能，提升访问速度 <span className="text-blue-600 dark:text-blue-400 font-bold"></span>  <span className="text-purple-600 dark:text-purple-400 font-bold"></span></span>
                     </li>
                     <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">单选题100%正确，更正了三道错题 <span className="text-blue-600 dark:text-blue-400 font-bold"></span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
+                        <span className="leading-relaxed font-medium">单选题100%正确，更正了三道错题 <span className="text-blue-600 dark:text-blue-400 font-bold"></span>  <span className="text-purple-600 dark:text-purple-400 font-bold"></span> </span>
                     </li>
                     <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">我国经济发展的路径选择是()应选择C 若您的答案不为C.构建新发展格局，请清楚浏览器缓存重新加载网站尝试<span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
+                        <span className="leading-relaxed font-medium">我国经济发展的路径选择是()应选择C 若您的答案不为C.构建新发展格局，请清楚浏览器缓存重新加载网站尝试<span className="text-blue-600 dark:text-blue-400 font-bold"></span> <span className="text-purple-600 dark:text-purple-400 font-bold"></span></span>
                     </li>
                     <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
