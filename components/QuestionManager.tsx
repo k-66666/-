@@ -1,8 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { Question, QuestionType } from '../types';
 import { Plus, Trash2, Save, Pencil, X, Wand2, Check, CheckSquare, Sparkles, Search } from 'lucide-react';
-import * as XLSX from 'xlsx';
+
+// Removing top-level import to support lazy loading
+// import * as XLSX from 'xlsx'; 
 
 interface QuestionManagerProps {
   questions: Question[];
@@ -131,9 +132,20 @@ export const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onA
       );
   };
 
-  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      // Dynamic import to prevent loading heavy xlsx library on initial page load
+      let XLSX;
+      try {
+        // @ts-ignore - Dynamic import of module in importmap
+        XLSX = await import('xlsx');
+      } catch (err) {
+        console.error("Failed to load XLSX library", err);
+        alert("Excel组件加载失败，请检查网络连接");
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = (evt) => {

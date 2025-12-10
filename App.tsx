@@ -1,15 +1,25 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useQuestionBank } from './hooks/useQuestionBank';
 import { Layout } from './components/Layout';
 import { QuizCard } from './components/QuizCard';
-import { StatsView } from './components/StatsView';
-import { QuestionManager } from './components/QuestionManager';
 import { DeckSelection } from './components/DeckSelection';
 import { SubDeckSelection, SubDeckConfig } from './components/SubDeckSelection';
 import { QuestionList } from './components/QuestionList';
 import { Question, QuestionStat } from './types';
-import { RotateCcw, AlertTriangle, CheckCircle2, Trophy } from 'lucide-react';
+import { RotateCcw, AlertTriangle, CheckCircle2, Trophy, Loader2 } from 'lucide-react';
+
+// Lazy load heavy components
+// These components import heavy libraries (Recharts, XLSX) which slow down initial load
+// We use a named export mapping trick for React.lazy
+const StatsView = React.lazy(() => import('./components/StatsView').then(module => ({ default: module.StatsView })));
+const QuestionManager = React.lazy(() => import('./components/QuestionManager').then(module => ({ default: module.QuestionManager })));
+
+const LoadingSpinner = () => (
+  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+    <span className="text-xs font-medium">加载模块中...</span>
+  </div>
+);
 
 const App: React.FC = () => {
   const { questions: allQuestions, progress, addQuestion, updateQuestion, deleteQuestion, recordAttempt, togglePin, completeRound, resetProgress, getMistakes, loading } = useQuestionBank();
@@ -456,27 +466,31 @@ const App: React.FC = () => {
           )}
       </div>
 
-      {/* Stats View */}
+      {/* Stats View with Suspense for Lazy Loading */}
       <div className={`h-full flex flex-col ${activeTab === 'stats' ? '' : 'hidden'}`}>
-            <StatsView 
-                progress={progress} 
-                totalQuestions={questions.length} 
-                questions={questions} 
-                onReview={handleReview}
-                currentRound={currentRoundDisplay}
-                currentRoundProgress={answeredInCurrentRoundCount}
-                onCompleteRound={handleCompleteRound}
-            />
+            <Suspense fallback={<LoadingSpinner />}>
+                <StatsView 
+                    progress={progress} 
+                    totalQuestions={questions.length} 
+                    questions={questions} 
+                    onReview={handleReview}
+                    currentRound={currentRoundDisplay}
+                    currentRoundProgress={answeredInCurrentRoundCount}
+                    onCompleteRound={handleCompleteRound}
+                />
+            </Suspense>
       </div>
 
-      {/* Manage View */}
+      {/* Manage View with Suspense for Lazy Loading */}
       <div className={`h-full flex flex-col ${activeTab === 'manage' ? '' : 'hidden'}`}>
-            <QuestionManager 
-            questions={questions} 
-            onAdd={(q) => addQuestion({...q, category: selectedCategory})} 
-            onUpdate={updateQuestion}
-            onDelete={deleteQuestion} 
-            />
+            <Suspense fallback={<LoadingSpinner />}>
+                <QuestionManager 
+                questions={questions} 
+                onAdd={(q) => addQuestion({...q, category: selectedCategory})} 
+                onUpdate={updateQuestion}
+                onDelete={deleteQuestion} 
+                />
+            </Suspense>
       </div>
     </Layout>
     

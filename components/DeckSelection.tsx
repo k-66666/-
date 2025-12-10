@@ -176,9 +176,9 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
             <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-2">
                     <span className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm">
-                        v6.1
+                        v6.6
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-tight">2025.12.09</span>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-tight">2025.12.10 19：56</span>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full ring-1 ring-blue-500/10">
                     <Sparkles className="w-3 h-3 fill-current animate-pulse" />
@@ -188,6 +188,18 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
             
             <div className="relative z-10">
                 <ul className="space-y-3">
+                <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <span className="leading-relaxed font-medium">优化了加载性能，提升访问速度 <span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
+                    </li>
+                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <span className="leading-relaxed font-medium">单选题100%正确，更正了三道错题 <span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
+                    </li>
+                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <span className="leading-relaxed font-medium">我国经济发展的路径选择是()应选择C 若您的答案不为C.构建新发展格局，请清楚浏览器缓存重新加载网站尝试<span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
+                    </li>
                     <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
                         <span className="leading-relaxed font-medium">新增简答题 <span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
