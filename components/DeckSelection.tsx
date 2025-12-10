@@ -1,10 +1,52 @@
 
 import React, { useState, useEffect } from 'react';
-import { Book, LayoutGrid, Bell, Sparkles, Info, MessageCircle, AlertTriangle, Calendar, Target, Flame } from 'lucide-react';
+import { Book, LayoutGrid, Bell, Sparkles, Info, MessageCircle, AlertTriangle, Calendar, Target, Flame, X, Rocket, Clock, History, ChevronRight } from 'lucide-react';
 
 interface DeckSelectionProps {
   onSelect: (category: string) => void;
 }
+
+// === VERSION DATA ===
+const VERSION_HISTORY = [
+    {
+        version: 'v6.6',
+        date: '2025.12.10 19:56',
+        tag: '重要更新',
+        isNew: true,
+        logs: [
+            "优化了加载性能，提升访问速度",
+            "单选题100%正确，更正了三道错题",
+            "我国经济发展的路径选择是()应选择C 若您的答案不为C.构建新发展格局，请清除浏览器缓存重新加载网站尝试",
+            "完善社会主义市场经济体制的核心问题是处理好( )关系。应选择D.市场与供需",
+            "经过( )个五年规划(计划),我们已经为实现建设社会主义现代化国家的目标奠定了坚实基础，应选择B.13",
+            "如果您的题答案不是上述，请清除浏览器缓存，并重新加载网站尝试"
+        ]
+    },
+    {
+        version: 'v6.5',
+        date: '2025.12.08',
+        tag: '功能新增',
+        isNew: false,
+        logs: [
+            "新增“2022真题”板块，包含选择题与材料分析题",
+            "优化了错题本的排序算法，优先显示最近做错的题目",
+            "增加了“简答复习”专题，重点攻克记忆难点"
+        ]
+    },
+    {
+        version: 'v6.0',
+        date: '2025.12.01',
+        tag: '正式发布',
+        isNew: false,
+        logs: [
+            "华水期中刷题神器正式上线！",
+            "收录自然辩证法、中特核心题库",
+            "支持刷题、错题本、统计分析功能"
+        ]
+    }
+];
+
+const LATEST_VERSION = VERSION_HISTORY[0];
 
 const ExamCountdown = () => {
   const [timeLeft, setTimeLeft] = useState<{d: number, h: number, m: number} | null>(null);
@@ -12,7 +54,6 @@ const ExamCountdown = () => {
   useEffect(() => {
     const calculateTime = () => {
       const now = new Date();
-      // Target: Current Year, December (11), 11th, 14:00:00
       const target = new Date(now.getFullYear(), 11, 11, 14, 0, 0);
       
       const diff = target.getTime() - now.getTime();
@@ -34,7 +75,6 @@ const ExamCountdown = () => {
 
   if (!timeLeft) return null;
 
-  // Encouragement logic based on remaining days
   let message = "按部就班，稳扎稳打";
   let colorClass = "from-blue-500 to-cyan-400";
   let icon = <Calendar className="w-3.5 h-3.5" />;
@@ -75,9 +115,147 @@ const ExamCountdown = () => {
   );
 };
 
+const AnnouncementModal = ({ version, onClose }: { version: typeof LATEST_VERSION, onClose: () => void }) => {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-pop relative">
+                
+                {/* Decorative Header */}
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 pt-8 pb-12 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12 scale-150 -translate-y-4 translate-x-4">
+                        <Rocket className="w-32 h-32 text-white" />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-3 py-1 text-white text-[10px] font-bold mb-3 shadow-sm">
+                            <Sparkles className="w-3 h-3 animate-pulse" />
+                            <span>{version.tag}</span>
+                        </div>
+                        <h2 className="text-3xl font-black text-white mb-1">{version.version}</h2>
+                        <p className="text-blue-100 text-xs font-medium opacity-90">{version.date}</p>
+                    </div>
+                </div>
+
+                {/* Content Body - Overlapping header */}
+                <div className="relative z-20 -mt-8 px-4 pb-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-5">
+                         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                            <Bell className="w-4 h-4 text-orange-500" />
+                            更新内容
+                         </h3>
+                         <ul className="space-y-3 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                            {version.logs.map((log, idx) => (
+                                <li key={idx} className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                                    <span>{log}</span>
+                                </li>
+                            ))}
+                         </ul>
+                    </div>
+                </div>
+
+                {/* Footer Action */}
+                <div className="p-4 pt-0">
+                    <button 
+                        onClick={onClose}
+                        className="w-full py-3.5 bg-slate-900 dark:bg-blue-600 hover:opacity-90 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                        <span>我知道了</span>
+                    </button>
+                </div>
+
+                {/* Close X Top Right */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-2 bg-black/10 hover:bg-black/20 text-white rounded-full transition-colors z-30"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const HistoryModal = ({ onClose }: { onClose: () => void }) => {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-slide-in-right">
+                
+                {/* Header */}
+                <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 z-10">
+                    <div className="flex items-center gap-2">
+                         <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
+                             <History className="w-5 h-5" />
+                         </div>
+                         <div>
+                             <h2 className="text-lg font-bold text-slate-800 dark:text-white">历史公告</h2>
+                             <p className="text-xs text-slate-500 dark:text-slate-400">版本更新记录</p>
+                         </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <X className="w-5 h-5 text-slate-500" />
+                    </button>
+                </div>
+
+                {/* List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">
+                    {VERSION_HISTORY.map((ver, idx) => (
+                        <div key={idx} className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-black px-2 py-0.5 rounded-md ${idx === 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                                        {ver.version}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-mono">{ver.date}</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                                    {ver.tag}
+                                </span>
+                            </div>
+                            <ul className="space-y-2">
+                                {ver.logs.map((log, i) => (
+                                    <li key={i} className="flex gap-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                        <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 mt-1.5 shrink-0" />
+                                        <span>{log}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    const storageKey = `seen_version_${LATEST_VERSION.version}`;
+    const hasSeen = localStorage.getItem(storageKey);
+    
+    // Check if new version unseen
+    if (!hasSeen) {
+        const timer = setTimeout(() => setShowAnnouncement(true), 600);
+        return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleCloseAnnouncement = () => {
+      setShowAnnouncement(false);
+      localStorage.setItem(`seen_version_${LATEST_VERSION.version}`, 'true');
+  };
+
   return (
     <div className="p-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+      
+      {/* Floating Announcement Modal for New Version */}
+      {showAnnouncement && <AnnouncementModal version={LATEST_VERSION} onClose={handleCloseAnnouncement} />}
+
+      {/* History Modal */}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
+
       <div className="flex items-center gap-2 mb-2 px-1">
          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
              <LayoutGrid className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -117,12 +295,11 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
            </div>
         </button>
 
-        {/* ZhongTe Card - Highlighted */}
+        {/* ZhongTe Card */}
         <button 
           onClick={() => onSelect('中特')}
           className="group relative w-full text-left transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
         >
-           {/* Background Gradient */}
            <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-slate-900 rounded-3xl shadow-md border border-red-100 dark:border-red-900/30 group-hover:shadow-xl group-hover:shadow-red-500/10 group-hover:border-red-200 dark:group-hover:border-red-800/50 transition-all" />
            
            <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 ease-out origin-top-right">
@@ -134,10 +311,6 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 shadow-lg shadow-red-500/20 flex items-center justify-center text-white font-black text-2xl">
                         特
                    </div>
-                   {/* Exam Countdown Widget */}
-                   <div className="hidden sm:block"> 
-                       {/* This could be shown differently on larger screens if needed */}
-                   </div>
                </div>
 
                <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">中国特色社会主义</h3>
@@ -145,10 +318,8 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
                    包含2025新版试卷结构，重点难点全覆盖。
                </p>
 
-               {/* Integrated Countdown for Mobile */}
                <ExamCountdown />
 
-               {/* Structure Badge */}
                <div className="mt-3 flex items-start gap-2 bg-white/60 dark:bg-slate-800/40 rounded-lg p-2.5 border border-red-100/50 dark:border-red-900/20">
                    <Sparkles className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0 animate-pulse" />
                    <div className="text-[10px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
@@ -162,56 +333,49 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
 
       {/* 公告栏 Section */}
       <div className="space-y-4 pt-2">
-        <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Bell className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+        <div className="flex items-center justify-between px-1 mb-2">
+            <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                    <Bell className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h2 className="text-base font-bold text-slate-700 dark:text-slate-200">公告栏</h2>
             </div>
-            <h2 className="text-base font-bold text-slate-700 dark:text-slate-200">公告栏</h2>
+            
+            {/* History Trigger */}
+            <button 
+                onClick={() => setShowHistory(true)}
+                className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full"
+            >
+                <History className="w-3 h-3" />
+                历史公告
+            </button>
         </div>
 
-        {/* Update Log */}
+        {/* Static Latest Log Card */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-[40px] pointer-events-none transition-transform group-hover:scale-110" />
             
             <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-2">
                     <span className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm">
-                        v6.6
+                        {LATEST_VERSION.version}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-tight">2025.12.10 19：56</span>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-tight">{LATEST_VERSION.date}</span>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full ring-1 ring-blue-500/10">
                     <Sparkles className="w-3 h-3 fill-current animate-pulse" />
-                    <span>重要更新</span>
+                    <span>{LATEST_VERSION.tag}</span>
                 </div>
             </div>
             
             <div className="relative z-10">
                 <ul className="space-y-3">
-                <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">优化了加载性能，提升访问速度 <span className="text-blue-600 dark:text-blue-400 font-bold"></span>  <span className="text-purple-600 dark:text-purple-400 font-bold"></span></span>
-                    </li>
-                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">单选题100%正确，更正了三道错题 <span className="text-blue-600 dark:text-blue-400 font-bold"></span>  <span className="text-purple-600 dark:text-purple-400 font-bold"></span> </span>
-                    </li>
-                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">我国经济发展的路径选择是()应选择C 若您的答案不为C.构建新发展格局，请清楚浏览器缓存重新加载网站尝试<span className="text-blue-600 dark:text-blue-400 font-bold"></span> <span className="text-purple-600 dark:text-purple-400 font-bold"></span></span>
-                    </li>
-                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">新增简答题 <span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
-                    </li>
-                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">新增错题 <span className="text-red-500 font-bold">全屏红牌警示</span> (Flashcard)，强化错误记忆冲击。</span>
-                    </li>
-                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <span className="leading-relaxed font-medium">UI 全面重构，采用现代化卡片设计，优化夜间模式体验。</span>
-                    </li>
+                    {LATEST_VERSION.logs.map((log, idx) => (
+                        <li key={idx} className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item leading-relaxed">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                            <span>{log}</span>
+                        </li>
+                    ))}
                 </ul>
             </div>
         </div>
