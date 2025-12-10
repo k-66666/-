@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Book, LayoutGrid, Clock, Bell, Sparkles, Info, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Book, LayoutGrid, Bell, Sparkles, Info, MessageCircle, AlertTriangle, Calendar, Target, Flame } from 'lucide-react';
 
 interface DeckSelectionProps {
   onSelect: (category: string) => void;
@@ -33,19 +34,42 @@ const ExamCountdown = () => {
 
   if (!timeLeft) return null;
 
+  // Encouragement logic based on remaining days
+  let message = "按部就班，稳扎稳打";
+  let colorClass = "from-blue-500 to-cyan-400";
+  let icon = <Calendar className="w-3.5 h-3.5" />;
+
+  if (timeLeft.d <= 1) {
+      message = "决战时刻，稳住能赢！";
+      colorClass = "from-red-500 to-orange-500 animate-pulse";
+      icon = <Flame className="w-3.5 h-3.5 fill-current" />;
+  } else if (timeLeft.d <= 3) {
+      message = "最后冲刺，乾坤未定！";
+      colorClass = "from-orange-500 to-amber-400";
+      icon = <Target className="w-3.5 h-3.5" />;
+  } else if (timeLeft.d <= 7) {
+      message = "查漏补缺，保持节奏";
+      colorClass = "from-indigo-500 to-purple-400";
+  }
+
   return (
-    <div className="absolute top-6 right-6 flex flex-col items-end z-20">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-600/80 dark:text-red-400/80 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full mb-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-            <span>距离考试</span>
+    <div className="mt-3 bg-white/50 dark:bg-black/20 rounded-xl p-3 border border-red-100 dark:border-red-900/30 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-1.5">
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold text-white px-2 py-0.5 rounded-full bg-gradient-to-r shadow-sm ${colorClass}`}>
+                {icon}
+                <span>{message}</span>
+            </div>
+            <div className="text-[10px] font-bold text-red-400 dark:text-red-300">
+                距离考试
+            </div>
         </div>
-        <div className="text-xl font-black text-slate-800 dark:text-slate-200 font-mono tracking-tight leading-none">
-            {timeLeft.d}<span className="text-xs font-bold text-slate-400 mx-0.5">天</span>
-            {timeLeft.h}<span className="text-xs font-bold text-slate-400 mx-0.5">时</span>
-            {timeLeft.m}<span className="text-xs font-bold text-slate-400 ml-0.5">分</span>
+        <div className="flex items-baseline gap-1 text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+             <span className="text-2xl font-black tabular-nums">{timeLeft.d}</span>
+             <span className="text-xs font-bold text-slate-400 mr-2">天</span>
+             <span className="text-xl font-black tabular-nums">{timeLeft.h}</span>
+             <span className="text-xs font-bold text-slate-400 mr-2">时</span>
+             <span className="text-xl font-black tabular-nums">{timeLeft.m}</span>
+             <span className="text-xs font-bold text-slate-400">分</span>
         </div>
     </div>
   );
@@ -54,138 +78,163 @@ const ExamCountdown = () => {
 export const DeckSelection: React.FC<DeckSelectionProps> = ({ onSelect }) => {
   return (
     <div className="p-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex items-center gap-2 mb-2 text-slate-800 dark:text-slate-100">
-         <LayoutGrid className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-         <h2 className="text-xl font-bold">发现牌组</h2>
+      <div className="flex items-center gap-2 mb-2 px-1">
+         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+             <LayoutGrid className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+         </div>
+         <div>
+             <h2 className="text-lg font-black text-slate-800 dark:text-white">发现牌组</h2>
+             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">选择科目开始复习</p>
+         </div>
       </div>
       
-      <div className="grid gap-4">
+      <div className="grid gap-5">
         {/* Dialectics Card */}
         <button 
           onClick={() => onSelect('自然辩证法')}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 text-left hover:border-blue-500 dark:hover:border-blue-400 transition-all group relative overflow-hidden"
+          className="group relative w-full text-left transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
         >
-           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-               <Book className="w-32 h-32" />
+           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700/50 group-hover:shadow-xl group-hover:border-blue-200 dark:group-hover:border-blue-700/50 transition-all" />
+           <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500 ease-out origin-top-right">
+               <Book className="w-40 h-40" />
            </div>
-           <div className="relative z-10">
-               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 font-bold text-xl">
-                    辩
+           
+           <div className="relative z-10 p-5 flex flex-col h-full">
+               <div className="flex justify-between items-start mb-4">
+                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20 flex items-center justify-center text-white font-black text-2xl">
+                        辩
+                   </div>
+                   <div className="flex gap-1">
+                        <span className="text-[10px] font-bold bg-white/80 dark:bg-slate-800/80 backdrop-blur px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700 text-slate-500">不定项</span>
+                        <span className="text-[10px] font-bold bg-white/80 dark:bg-slate-800/80 backdrop-blur px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700 text-slate-500">判断题</span>
+                   </div>
                </div>
-               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">自然辩证法</h3>
-               <p className="text-sm text-slate-500 dark:text-slate-400">研究生公共课复习题库</p>
-               <div className="mt-4 flex items-center gap-2">
-                   <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">不定项选择</span>
-                   <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">判断题</span>
-               </div>
+               
+               <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">自然辩证法</h3>
+               <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[80%]">
+                   研究生公共课核心题库，包含深度解析与巧记。
+               </p>
            </div>
         </button>
 
-        {/* ZhongTe Card */}
+        {/* ZhongTe Card - Highlighted */}
         <button 
           onClick={() => onSelect('中特')}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 text-left hover:border-red-500 dark:hover:border-red-400 transition-all group relative overflow-hidden"
+          className="group relative w-full text-left transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
         >
-           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-               <Book className="w-32 h-32" />
-           </div>
+           {/* Background Gradient */}
+           <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-slate-900 rounded-3xl shadow-md border border-red-100 dark:border-red-900/30 group-hover:shadow-xl group-hover:shadow-red-500/10 group-hover:border-red-200 dark:group-hover:border-red-800/50 transition-all" />
            
-           <ExamCountdown />
+           <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 ease-out origin-top-right">
+               <Target className="w-40 h-40" />
+           </div>
 
-           <div className="relative z-10">
-               <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 mb-4 font-bold text-xl">
-                    特
-               </div>
-               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">中特</h3>
-               <p className="text-sm text-slate-500 dark:text-slate-400">中国特色社会主义理论体系</p>
-               
-               {/* 2025 Exam Structure Notice */}
-               <div className="mt-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/50 rounded-lg p-2.5 max-w-[90%]">
-                  <div className="flex items-start gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0 animate-pulse" />
-                      <p className="text-[10px] leading-relaxed text-red-700 dark:text-red-300 font-medium">
-                          <span className="font-bold">2025试卷结构：</span>
-                          单选30道(1分)，多选5道(2分)，简答2道(5分)，论述2道(15分)，材料1道(20分)
-                      </p>
-                  </div>
+           <div className="relative z-10 p-5">
+               <div className="flex justify-between items-start mb-2">
+                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 shadow-lg shadow-red-500/20 flex items-center justify-center text-white font-black text-2xl">
+                        特
+                   </div>
+                   {/* Exam Countdown Widget */}
+                   <div className="hidden sm:block"> 
+                       {/* This could be shown differently on larger screens if needed */}
+                   </div>
                </div>
 
-               
+               <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">中国特色社会主义</h3>
+               <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4">
+                   包含2025新版试卷结构，重点难点全覆盖。
+               </p>
+
+               {/* Integrated Countdown for Mobile */}
+               <ExamCountdown />
+
+               {/* Structure Badge */}
+               <div className="mt-3 flex items-start gap-2 bg-white/60 dark:bg-slate-800/40 rounded-lg p-2.5 border border-red-100/50 dark:border-red-900/20">
+                   <Sparkles className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0 animate-pulse" />
+                   <div className="text-[10px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
+                       <span className="font-bold text-red-600 dark:text-red-400 block mb-0.5">2025 试卷结构</span>
+                       单选30道(1分) · 多选5道(2分) · 简答2道(5分) · 论述2道(15分) · 材料1道(20分)
+                   </div>
+               </div>
            </div>
         </button>
       </div>
 
       {/* 公告栏 Section */}
-      <div className="space-y-4 pt-4">
-        <div className="flex items-center gap-2 mb-2 text-slate-800 dark:text-slate-100">
-            <Bell className="w-5 h-5 text-orange-500 fill-orange-500" />
-            <h2 className="text-lg font-bold">公告栏</h2>
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Bell className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h2 className="text-base font-bold text-slate-700 dark:text-slate-200">公告栏</h2>
         </div>
 
         {/* Update Log */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-3xl pointer-events-none" />
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-[40px] pointer-events-none transition-transform group-hover:scale-110" />
             
-            <div className="flex items-center justify-between mb-3 relative z-10">
+            <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-2">
-                    <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm">
+                    <span className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm">
                         v6.1
                     </span>
-                    <span className="text-xs text-slate-400 font-mono font-medium">2025-12-09</span>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-tight">2025.12.09</span>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full ring-1 ring-blue-500/10">
                     <Sparkles className="w-3 h-3 fill-current animate-pulse" />
-                    <span>重要通知</span>
+                    <span>重要更新</span>
                 </div>
             </div>
             
             <div className="relative z-10">
-                <ul className="space-y-2.5">
-                    {/* Removed duplicated announcement */}
-                    <li className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                        <span className="leading-relaxed">新增简答题 <strong>思维导图 (MindMap)</strong> 与 <strong>星图记忆</strong> 模式，助记更高效。</span>
+                <ul className="space-y-3">
+                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <span className="leading-relaxed font-medium">新增简答题 <span className="text-blue-600 dark:text-blue-400 font-bold">思维导图 (MindMap)</span> 与 <span className="text-purple-600 dark:text-purple-400 font-bold">星图记忆</span> 模式，视觉化助记更高效。</span>
                     </li>
-                    <li className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                        <span className="leading-relaxed">新增错题 <strong>全屏红牌警示</strong> (Flashcard)，强化记忆冲击。</span>
+                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <span className="leading-relaxed font-medium">新增错题 <span className="text-red-500 font-bold">全屏红牌警示</span> (Flashcard)，强化错误记忆冲击。</span>
                     </li>
-
-                    <li className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                        <span className="leading-relaxed">UI 全面重构，优化动画流畅度与夜间模式体验。</span>
+                    <li className="flex gap-3 text-xs text-slate-600 dark:text-slate-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <span className="leading-relaxed font-medium">UI 全面重构，采用现代化卡片设计，优化夜间模式体验。</span>
                     </li>
                 </ul>
             </div>
         </div>
 
         {/* User Tips */}
-        <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-inner">
-             <div className="flex items-start gap-3">
-                 <Info className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
+        <div className="bg-slate-50 dark:bg-slate-950 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-inner">
+             <div className="flex items-start gap-4">
+                 <div className="p-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 shrink-0">
+                    <Info className="w-5 h-5 text-slate-400" />
+                 </div>
                  <div className="space-y-4 flex-1">
                      <div>
-                         <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">用户公告</h3>
-                         <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed space-y-1">
-                            <p>1. 建议使用浏览器（推荐 Chrome/Edge/Safari）直接运行以获得最佳体验。</p>
-                            <p className="flex items-start gap-1 text-orange-600 dark:text-orange-400 font-medium">
-                                <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                                请勿清除浏览器缓存/Cookies，否则刷题进度将会丢失。
+                         <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider flex items-center gap-2">
+                             用户须知
+                         </h3>
+                         <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed space-y-2 font-medium">
+                            <p>推荐使用 Chrome/Edge/Safari 浏览器访问以获得最佳动画体验。</p>
+                            <p className="flex items-start gap-1.5 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/10 p-2 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                <span>请勿清除浏览器缓存/Cookies，否则刷题进度将会丢失。</span>
                             </p>
                          </div>
                      </div>
                      
-                     <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+                     <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <MessageCircle className="w-3.5 h-3.5" /> 联系作者
                          </h3>
-                         <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            <p className="mb-1">感谢每一位用户，精力有限，题目有误、新增题库或改进功能建议，请联系微信：</p>
-                            <div className="flex flex-wrap gap-2 mt-1.5">
-                                <span className="font-mono font-bold select-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-700 dark:text-slate-300">
+                         <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                            <p className="mb-2">感谢支持，如有题目勘误或功能建议，请联系：</p>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="font-mono text-[10px] font-bold select-all bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:border-blue-500 transition-colors cursor-text">
                                     k先生：17513607707
                                 </span>
-                                <span className="font-mono font-bold select-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-700 dark:text-slate-300">
+                                <span className="font-mono text-[10px] font-bold select-all bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:border-blue-500 transition-colors cursor-text">
                                     z先生：18790660660
                                 </span>
                             </div>
