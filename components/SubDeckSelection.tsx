@@ -163,7 +163,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
             </div>
             <div className="relative z-10">
                 <div className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                    2022真题 (A卷)
+                    2022真题
                     <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold animate-pulse">New</span>
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
@@ -174,7 +174,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
         {/* 2021 Exam */}
         <button 
-            onClick={() => onSelect({ type: 'tag', tag: '2021真题', label: '2021真题 (A卷)' })}
+            onClick={() => onSelect({ type: 'tag', tag: '2021真题', label: '2021真题' })}
             className="w-full p-4 rounded-3xl border text-left flex items-center gap-4 transition-all active:scale-95 shadow-sm hover:shadow-md bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 group"
         >
             <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400 font-black text-lg group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
@@ -182,7 +182,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
             </div>
             <div>
                 <div className="font-bold text-lg text-slate-900 dark:text-white">
-                    2021真题 (A卷)
+                    2021真题
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                     {exam2021Stats.count > 0 ? `${exam2021Stats.count}道题 · 简答` : '暂无题目'}
@@ -192,7 +192,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
         {/* Review Essays */}
         <button 
-            onClick={() => onSelect({ type: 'tag', tag: '简答复习', label: '简答题重点复习', questionType: QuestionType.ESSAY })}
+            onClick={() => onSelect({ type: 'tag', tag: '简答复习', label: '简答（一题5分，2道题）', questionType: QuestionType.ESSAY })}
             className="w-full p-4 rounded-3xl border text-left flex items-center gap-4 transition-all active:scale-95 shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white border-indigo-500 mt-2 relative overflow-hidden group"
         >
              <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-125 transition-transform duration-500 rotate-12">
@@ -221,7 +221,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
         {/* Question Bank (1-150) */}
         <button 
-            onClick={() => onSelect({ type: 'range', min: 1, max: 150, label: '单选题库（重点）' })}
+            onClick={() => onSelect({ type: 'range', min: 1, max: 150, label: '单选（一题1分，30道题）' })}
             className="w-full p-4 rounded-3xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800/50 group"
         >
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm shrink-0 border border-blue-100 dark:border-blue-900/30">
@@ -237,7 +237,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
         {/* Multi Choice (151-300) */}
         <button 
-            onClick={() => onSelect({ type: 'range', min: 151, max: 300, label: '多选题库' })}
+            onClick={() => onSelect({ type: 'range', min: 151, max: 300, label: '多选（一题2分，5道题）' })}
             className="w-full p-4 rounded-3xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-purple-50/50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-800/50 group"
         >
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm shrink-0 border border-purple-100 dark:border-purple-900/30">
@@ -253,7 +253,7 @@ export const SubDeckSelection: React.FC<SubDeckSelectionProps> = ({ category, qu
 
         {/* Judge (301-450) */}
         <button 
-            onClick={() => onSelect({ type: 'range', min: 301, max: 450, label: '判断题库 ' })}
+            onClick={() => onSelect({ type: 'range', min: 301, max: 450, label: '判断题库（今年不考） ' })}
             className="w-full p-4 rounded-3xl border text-left flex items-center gap-4 transition-all active:scale-95 hover:shadow-md bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-800/50 group"
         >
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm shrink-0 border border-green-100 dark:border-green-900/30">
