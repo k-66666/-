@@ -113,6 +113,8 @@ public class EmployeeController {
      * @param id
      * @return
      */
+    //为什么有的不用泛型？（比如 logout、addEmp、enableDisable）
+    //这些方法有一个共同特点：前端只需要知道“成功了没有”，不需要后端给它具体的对象数据。
     @ApiOperation("启用/禁用员工")
     @PostMapping("/status/{status}")
     //`@PathVariable` 的作用是把 URL 路径中的占位符值绑定到方法参数上。
@@ -125,6 +127,20 @@ public class EmployeeController {
         log.info("员工状态修改：{},id={}", status, id);
         employeeService.enableDisable(status,id);
         return Result.success();
+    }
+
+    /**
+     *回显员工
+     * @param id
+     * @return
+     */
+    @ApiOperation("回显员工")
+    @GetMapping("/{id}")
+    //`@PathVariable` 的作用是把 URL 路径中的占位符值绑定到方法参数上。
+    public Result<Employee> getByID(@PathVariable Long id){
+        log.info("回显员工：id = {}",id);
+        Employee employee = employeeService.getByID(id);
+        return Result.success(employee);
     }
 
 }

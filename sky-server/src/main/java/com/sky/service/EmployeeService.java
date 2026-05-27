@@ -34,4 +34,6 @@ public interface EmployeeService {
      * @param id
      */
     void enableDisable(Integer status, Long id);
+
+    Employee getByID(Long id);
 }
