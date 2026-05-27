@@ -1,16 +1,22 @@
 package com.sky.service.impl;
 
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
+import com.sky.context.BaseContext;
 import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
+import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
 import com.sky.exception.PasswordErrorException;
 import com.sky.mapper.EmployeeMapper;
+import com.sky.result.PageResult;
 import com.sky.service.EmployeeService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +24,7 @@ import org.springframework.util.DigestUtils;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
@@ -63,19 +70,58 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public void addEmp(EmployeeDTO dto) {
+        log.info("EmployeeServiceImpl:线程id={}", Thread.currentThread().getId());
         Employee employee = new Employee();
         //属性拷贝
-        BeanUtils.copyProperties(dto,employee);
+        BeanUtils.copyProperties(dto, employee);
         // 1.补充缺失的属性值
         //补充密码字段，需要进行MD5加密
         employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
         employee.setStatus(StatusConstant.ENABLE);
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
-        employee.setCreateUser(10L);
-        employee.setUpdateUser(10L);
+
+        //从ThreadLocal中获取出登陆人id
+        employee.setCreateUser(BaseContext.getCurrentId());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+
         //2.调用mapper的新增方法，将员工对象填入employee表中
         employeeMapper.insert(employee);
+    }
+
+    /**
+     * 员工分页查询--需要用分页插件PageHelper
+     *
+     * @param dto
+     * @return
+     */
+    @Override
+    public PageResult page(EmployeePageQueryDTO dto) {
+        //1.设置分页参数
+        PageHelper.startPage(dto.getPage(), dto.getPageSize());
+
+        //2.调用mapper的查询方法，并强转返回类型为Page
+        Page<Employee> page = employeeMapper.list(dto.getName());
+
+        //3.封装pageresult对象并返回
+        return new PageResult(page.getTotal(), page.getResult());
+    }
+
+    /**
+     * 启用 /禁用员工
+     *
+     * @param status
+     * @param id
+     */
+    @Override
+    public void enableDisable(Integer status, Long id) {
+        Employee employee = Employee.builder()
+                .id(id)
+                .status(status)
+                .updateTime(LocalDateTime.now())
+                .updateUser(BaseContext.getCurrentId())
+                .build();
+        employeeMapper.update(employee);
     }
 
 }
