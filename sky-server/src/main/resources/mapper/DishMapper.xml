@@ -9,8 +9,15 @@
                                  #{createUser},#{updateUser})
 
     </insert>
+<!--    批量删除菜品-->
+    <delete id="deleteBatch">
+        delete from dish where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
 
-<!--    列表查询条件-->
+    <!--    列表查询条件-->
     <select id="list" resultType="com.sky.vo.DishVO">
 
         select t1.*,t2.name categoryName from dish t1 ,category t2
@@ -19,5 +26,10 @@
         <if test="status != null">and t1.status = #{status}</if>
         <if test="categoryId != null">and t1.category_id = #{categoryId}</if>
         order by update_time desc
+    </select>
+
+<!--  根据id查询菜品  -->
+    <select id="selectById" resultType="com.sky.entity.Dish">
+        select * from dish where id = #{id}
     </select>
 </mapper>

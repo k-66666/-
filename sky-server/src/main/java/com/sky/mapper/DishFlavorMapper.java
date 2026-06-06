@@ -13,4 +13,12 @@ public interface DishFlavorMapper {
      * @param dishFlavorsList
      */
     void insertBatch(List<DishFlavor> dishFlavorsList);
+
+    void deleteBatch(List<Long> dishIds);
+
+    /**
+     * 根据菜品id查询口味列表
+     * @param dishId 菜品id
+     */
+    List<DishFlavor> selectById(Long dishId);
 }
