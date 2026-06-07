@@ -9,7 +9,22 @@
                                  #{createUser},#{updateUser})
 
     </insert>
-<!--    批量删除菜品-->
+<!--    修改菜品 绿色的是mapper接口里面定义的方法名 蓝色的标签名是告诉数据库这是一个update方法-->
+    <update id="update">
+        update dish
+        <set>
+        <if test="name != null">name = #{name}, </if>
+        <if test="categoryId !=null" >category_id = #{categoryId},</if>
+        <if test="price != null">price = #{price},</if>
+        <if test="image != null">image = #{image},</if>
+        <if test="description != null">description = #{description},</if>
+        <if test="status != null">status = #{status},</if>
+        <if test="updateTime != null">update_time = #{updateTime},</if>
+        <if test="updateUser != null">update_user = #{updateUser},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <!--    批量删除菜品-->
     <delete id="deleteBatch">
         delete from dish where id in
         <foreach collection="ids" item="id" separator="," open="(" close=")">

@@ -28,7 +28,8 @@ import java.util.List;
 
 @Slf4j
 @Service
-public class DishServiceImpl implements DishService {
+public class
+DishServiceImpl implements DishService {
 
     @Autowired
     private DishMapper dishMapper;
@@ -94,7 +95,7 @@ public class DishServiceImpl implements DishService {
 
     }
 
-    //查询不需要加事务
+    //查询不需要加事务，删除或修改两个表或以上时需要加事务，确保原子性一致性
     @Override
     public DishVO getById(Long id) {
         DishVO dishVO = new DishVO();
@@ -106,6 +107,42 @@ public class DishServiceImpl implements DishService {
         dishVO.setFlavors(flavors);
         //3.构造DishVO对象并返回
         return dishVO;
+
+    }
+
+    @Transactional//修改涉及到两张表，加上事务
+    @Override
+    public void update(DishDTO dto) {
+        //1.修改菜品的基本信息，dish表
+        //这里不能传dto，因为修改涉及到更新人更新时间修改人修改时间，dto里面没有这几个字段
+        //要传一个Dish类型的对象,因为Dish类型的对象包含更新人更新时间之类的。由于没有，那就新建一个dish对象
+        Dish dish = new Dish();
+        //创建完的dish对象什么都没有，所以要先用已有数据进行填充
+        BeanUtils.copyProperties(dto,dish);
+        dishMapper.update(dish);
+        //此时dto里面的对象已经被拷贝完毕，还是缺少创建人创建时间更新人更新时间
+        //那就想办法将数据插入进入，此时想到了用注解自动补充更新人更新时间创建人创建时间
+        //由于dish里面已经有数据，此时可以在update方法上进行注解（mapper层）
+        //DTO 和 Entity 的本质区别就在于“字段的完整性”以及“对数据库操作的适配性”。
+        //dish可以注解填充，dto不可以，因为dto没有可以接受自动填充的属性，而dish有
+
+        //2.修改口味的基本信息，dish_flavor表
+        //由于口味列表的修改，涉及到删除/增加/修改口味的值，涉及的操作比较多
+        //可以全部删除旧数据，在添加新数据
+        //先删除
+        dishFlavorMapper.deleteByDishId(dto.getId());
+        //2.再新增数据
+        List<DishFlavor> flavors = dto.getFlavors();
+        if (flavors != null && flavors.size() > 0 ){
+            //关联菜品id
+            flavors.forEach(flavor ->{
+                flavor.setDishId(dish.getId());
+                    }
+                    );
+            dishFlavorMapper.insertBatch(flavors);
+        }
+
+
 
     }
 }
