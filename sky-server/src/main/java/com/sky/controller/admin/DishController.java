@@ -2,6 +2,7 @@ package com.sky.controller.admin;
 
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
+import com.sky.entity.Dish;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.DishService;
@@ -62,6 +63,11 @@ public class DishController {
         return Result.success();
    }
 
+    /**
+     * 根据id查询菜品
+     * @param id
+     * @return
+     */
    @ApiOperation("根据id查询菜品")
    @GetMapping("/{id}")
    public Result getById(@PathVariable Long id ){
@@ -69,6 +75,19 @@ public class DishController {
        DishVO dishVO =  dishService.getById(id);
 
         return  Result.success(dishVO);
+   }
+
+    /**
+     * 根据分类id查询菜品
+     * @param categoryId
+     * @return
+     */
+   @ApiOperation("根据分类id查询菜品")
+   @GetMapping("/list")
+   public Result<List<Dish>> getByCategoryId(Integer categoryId){
+       log.info("根据分类id查询菜品:{}",categoryId);
+       List<Dish> dish = dishService.getByCategoryId(categoryId);
+       return Result.success(dish);
    }
 
     /**
@@ -81,6 +100,20 @@ public class DishController {
    public Result update(@RequestBody DishDTO dto){
        log.info("修改菜品：",dto);
        dishService.update(dto);
+       return Result.success();
+   }
+
+    /**
+     * 菜品启售/停售
+     * @param status
+     * @param id
+     * @return
+     */
+   @ApiOperation("菜品启售/停售")
+   @PostMapping("/status/{status}")
+   public Result enableDisable(@PathVariable Integer status,Long id){
+        log.info("菜品启售/停售");
+       dishService.enableDisable(status,id);
        return Result.success();
    }
 }

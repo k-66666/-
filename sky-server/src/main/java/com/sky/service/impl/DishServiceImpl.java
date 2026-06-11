@@ -28,8 +28,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-public class
-DishServiceImpl implements DishService {
+public class DishServiceImpl implements DishService {
 
     @Autowired
     private DishMapper dishMapper;
@@ -107,7 +106,6 @@ DishServiceImpl implements DishService {
         dishVO.setFlavors(flavors);
         //3.构造DishVO对象并返回
         return dishVO;
-
     }
 
     @Transactional//修改涉及到两张表，加上事务
@@ -145,4 +143,26 @@ DishServiceImpl implements DishService {
 
 
     }
+
+
+    @Override
+    public List<Dish> getByCategoryId(Integer categoryId) {
+       List<Dish> dish =  dishMapper.getByCategoryId(categoryId);
+        return dish;
+    }
+
+    /**
+     * 菜品启售/停售
+     * @param status
+     * @param id
+     */
+    @Override
+    public void enableDisable(Integer status, Long id) {
+        Dish dish = Dish.builder()
+                .id(id)
+                .status(status)
+                .build();
+        dishMapper.update(dish);
+    }
+
 }
