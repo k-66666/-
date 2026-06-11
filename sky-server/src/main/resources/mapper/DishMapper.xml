@@ -9,7 +9,7 @@
                                  #{createUser},#{updateUser})
 
     </insert>
-<!--    修改菜品 绿色的是mapper接口里面定义的方法名 蓝色的标签名是告诉数据库这是一个update方法-->
+<!--    修改菜品,可复用方法 绿色的是mapper接口里面定义的方法名 蓝色的标签名是告诉数据库这是一个update方法-->
     <update id="update">
         update dish
         <set>
@@ -46,5 +46,9 @@
 <!--  根据id查询菜品  -->
     <select id="selectById" resultType="com.sky.entity.Dish">
         select * from dish where id = #{id}
+    </select>
+    <!--  根据分类id查询菜品  -->
+    <select id="getByCategoryId" resultType="com.sky.entity.Dish">
+        select * from dish where category_id = #{categoryId}
     </select>
 </mapper>
